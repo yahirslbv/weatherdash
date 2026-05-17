@@ -46,4 +46,12 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    /**
+     * Relación: Un usuario tiene muchas ciudades favoritas.
+     */
+    public function favoriteCities()
+    {
+        return $this->hasMany(FavoriteCity::class);
+    }
 }

@@ -20,4 +20,20 @@ Route::middleware('auth')->group(function () {
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
+// Rutas protegidas para el Clima
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [WeatherController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/city', [WeatherController::class, 'store'])->name('city.store'); // <-- Nueva ruta
+});
+
+// Rutas protegidas para el Clima
+Route::middleware(['auth', 'verified'])->group(function () {
+    Route::get('/dashboard', [WeatherController::class, 'index'])->name('dashboard');
+    Route::post('/dashboard/city', [WeatherController::class, 'store'])->name('city.store');
+    
+    // Nuevas rutas para Editar y Eliminar
+    Route::patch('/dashboard/city/{city}', [WeatherController::class, 'update'])->name('city.update');
+    Route::delete('/dashboard/city/{city}', [WeatherController::class, 'destroy'])->name('city.destroy');
+});
+
 require __DIR__.'/auth.php';
