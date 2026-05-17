@@ -4,36 +4,31 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\WeatherController;
 
-// Redirigir la raíz al dashboard
+// Redirigir la raíz a la nueva pantalla principal (Home)
 Route::get('/', function () {
-    return redirect()->route('dashboard');
+    return redirect()->route('home');
 });
 
-// Usar el controlador para el dashboard, protegiéndolo con auth
-Route::get('/dashboard', [WeatherController::class, 'index'])
-    ->middleware(['auth', 'verified'])
-    ->name('dashboard');
+// Todas las rutas de la aplicación protegidas por sesión
+Route::middleware(['auth', 'verified'])->group(function () {
+    
+    // Rutas de las nuevas vistas (Figma)
+    Route::get('/home', [WeatherController::class, 'home'])->name('home');
+    Route::get('/forecast', [WeatherController::class, 'forecast'])->name('forecast');
+    Route::get('/settings', [WeatherController::class, 'settings'])->name('settings');
 
+    // Rutas para "Mis Lugares" (Gestión de ciudades)
+    Route::get('/dashboard', [WeatherController::class, 'index'])->name('dashboard'); // Esta es la vista de Mis Lugares
+    Route::post('/dashboard/city', [WeatherController::class, 'store'])->name('city.store');
+    Route::patch('/dashboard/city/{city}', [WeatherController::class, 'update'])->name('city.update');
+    Route::delete('/dashboard/city/{city}', [WeatherController::class, 'destroy'])->name('city.destroy');
+});
+
+// Rutas del perfil de usuario (por defecto de Breeze)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
-
-// Rutas protegidas para el Clima
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [WeatherController::class, 'index'])->name('dashboard');
-    Route::post('/dashboard/city', [WeatherController::class, 'store'])->name('city.store'); // <-- Nueva ruta
-});
-
-// Rutas protegidas para el Clima
-Route::middleware(['auth', 'verified'])->group(function () {
-    Route::get('/dashboard', [WeatherController::class, 'index'])->name('dashboard');
-    Route::post('/dashboard/city', [WeatherController::class, 'store'])->name('city.store');
-    
-    // Nuevas rutas para Editar y Eliminar
-    Route::patch('/dashboard/city/{city}', [WeatherController::class, 'update'])->name('city.update');
-    Route::delete('/dashboard/city/{city}', [WeatherController::class, 'destroy'])->name('city.destroy');
 });
 
 require __DIR__.'/auth.php';

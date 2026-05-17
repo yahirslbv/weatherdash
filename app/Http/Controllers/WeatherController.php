@@ -40,6 +40,20 @@ class WeatherController extends Controller
         $city->delete();
         return back()->with('success', 'Ciudad eliminada.');
     }
+    public function home()
+    {
+        return view('home');
+    }
+
+    public function forecast()
+    {
+        return view('forecast');
+    }
+
+    public function settings()
+    {
+        return view('settings');
+    }
 
     // Método privado para evitar repetir la consulta a la API de Open-Meteo
     private function saveCity($name, $cityModel = null)
@@ -72,4 +86,5 @@ class WeatherController extends Controller
 
         return back()->withErrors(['city_name' => 'No se encontró la ubicación exacta.']);
     }
+    
 }
