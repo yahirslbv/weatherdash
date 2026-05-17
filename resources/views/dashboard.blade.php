@@ -54,27 +54,33 @@
                                     <p class="text-sm text-slate-500 mt-1">{{ count(explode(',', $city->city_name)) > 1 ? trim(explode(',', $city->city_name)[1]) : 'Ubicación guardada' }}</p>
                                 </div>
                                 <div class="text-right">
-                                    <div class="text-4xl font-light text-slate-800">--°C</div>
-                                    <div class="text-2xl mt-1">🌤️</div>
+                                    <div class="text-4xl font-light text-slate-800">
+                                        {{ isset($city->weather) ? round($city->weather['temperature_2m']) . '°C' : '--°C' }}
+                                    </div>
+                                    <div class="text-2xl mt-1">
+                                        {{ $city->weather['icon'] ?? '🌤️' }}
+                                    </div>
                                 </div>
                             </div>
                             
                             <div class="mt-4">
-                                <p class="text-blue-600 font-medium">Pendiente API...</p>
+                                <p class="text-blue-600 font-medium">
+                                    {{ $city->weather['description'] ?? 'Conectando a API...' }}
+                                </p>
                             </div>
 
                             <div class="mt-6 flex items-center justify-between border-t border-gray-100 pt-4 text-sm text-slate-600">
                                 <div class="flex items-center gap-1">
                                     <span class="text-gray-400">🌡️</span>
-                                    <span>↑--° ↓--°</span>
+                                    <span>Act.</span>
                                 </div>
                                 <div class="flex items-center gap-1">
                                     <span class="text-blue-400">💧</span>
-                                    <span>--%</span>
+                                    <span>{{ isset($city->weather) ? $city->weather['relative_humidity_2m'] : '--' }}%</span>
                                 </div>
                                 <div class="flex items-center gap-1">
                                     <span class="text-gray-400">💨</span>
-                                    <span>-- km/h</span>
+                                    <span>{{ isset($city->weather) ? round($city->weather['wind_speed_10m']) : '--' }} km/h</span>
                                 </div>
                             </div>
                         </div>
