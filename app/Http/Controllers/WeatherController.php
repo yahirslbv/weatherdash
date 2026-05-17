@@ -180,14 +180,15 @@ class WeatherController extends Controller
             'longitude' => $selectedCity->longitude,
             'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation',
             'hourly' => 'temperature_2m,precipitation_probability',
-            'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum',
+            'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code',
             'timezone' => 'auto',
             'forecast_days' => 14
         ]);
 
         $current = null;
         $hourly = [];
-        $maxTempHourly = 1; // Para escalar la gráfica
+        $daily = []; // Nuevo arreglo para los días
+        $maxTempHourly = 1;
 
         if ($response->successful()) {
             $data = $response->json();
@@ -220,9 +221,28 @@ class WeatherController extends Controller
                     if ($temp > $maxTempHourly) $maxTempHourly = $temp;
                 }
             }
+
+            // 3. Datos Diarios (14 Días)
+            $daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+            for ($i = 0; $i < 14; $i++) {
+                if (isset($data['daily']['time'][$i])) {
+                    $timeString = strtotime($data['daily']['time'][$i]);
+                    $dayLabel = ($i == 0) ? 'Hoy' : (($i == 1) ? 'Mañana' : $daysOfWeek[date('w', $timeString)] . ' ' . date('d', $timeString));
+
+                    $daily[] = [
+                        'date' => $dayLabel,
+                        'icon' => $this->getWeatherIcon($data['daily']['weather_code'][$i]),
+                        'desc' => $this->getWeatherDescription($data['daily']['weather_code'][$i]),
+                        'max' => round($data['daily']['temperature_2m_max'][$i]),
+                        'min' => round($data['daily']['temperature_2m_min'][$i]),
+                        'prob' => $data['daily']['precipitation_probability_max'][$i],
+                    ];
+                }
+            }
         }
 
-        return view('forecast', compact('selectedCity', 'cities', 'current', 'hourly', 'maxTempHourly'));
+        // Pasamos la variable $daily a la vista
+        return view('forecast', compact('selectedCity', 'cities', 'current', 'hourly', 'daily', 'maxTempHourly'));
     }
 
     public function settings()
