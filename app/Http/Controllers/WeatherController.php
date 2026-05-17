@@ -9,11 +9,13 @@ use App\Models\FavoriteCity;
 
 class WeatherController extends Controller
 {
+    // ==========================================
+    // SECCIÓN 1: MIS LUGARES (Dashboard)
+    // ==========================================
     public function index()
     {
         $cities = Auth::user()->favoriteCities;
 
-        // Recorremos las ciudades guardadas para buscar su clima en tiempo real
         foreach ($cities as $city) {
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
                 'latitude' => $city->latitude,
@@ -22,16 +24,10 @@ class WeatherController extends Controller
                 'timezone' => 'auto'
             ]);
 
-            // Si la API responde correctamente
             if ($response->successful()) {
-                // 1. Guardamos la respuesta en una variable temporal
                 $weatherData = $response->json()['current'];
-                
-                // 2. Le agregamos nuestros campos traducidos a la variable temporal
                 $weatherData['icon'] = $this->getWeatherIcon($weatherData['weather_code']);
                 $weatherData['description'] = $this->getWeatherDescription($weatherData['weather_code']);
-                
-                // 3. Ahora sí, le pasamos el arreglo completo y armado a nuestro modelo
                 $city->weather = $weatherData;
             }
         }
@@ -42,35 +38,32 @@ class WeatherController extends Controller
     public function store(Request $request)
     {
         $request->validate(['city_name' => 'required|string|max:255']);
-
         return $this->saveCity($request->city_name);
     }
 
     public function update(Request $request, FavoriteCity $city)
     {
-        // Validar que el usuario sea el dueño de este registro
         if ($city->user_id !== Auth::id()) abort(403);
-
         $request->validate(['city_name' => 'required|string|max:255']);
-
-        // Al editar, volvemos a buscar las coordenadas
         return $this->saveCity($request->city_name, $city);
     }
 
     public function destroy(FavoriteCity $city)
     {
         if ($city->user_id !== Auth::id()) abort(403);
-        
         $city->delete();
         return back()->with('success', 'Ciudad eliminada.');
     }
 
+
+    // ==========================================
+    // SECCIÓN 2: PANTALLA PRINCIPAL (Home API)
+    // ==========================================
     public function home(Request $request)
     {
         $user = Auth::user();
         $cities = $user->favoriteCities;
 
-        // 1. Elegir qué ciudad mostrar (si hay un parámetro en la URL, o la primera guardada, o Tijuana por defecto)
         $selectedCity = null;
         if ($request->has('city_id')) {
             $selectedCity = $cities->find($request->city_id);
@@ -79,7 +72,6 @@ class WeatherController extends Controller
             $selectedCity = $cities->first();
         }
 
-        // Fallback idéntico al prototipo si la base de datos está vacía
         if (!$selectedCity) {
             $selectedCity = (object)[
                 'id' => null,
@@ -89,7 +81,6 @@ class WeatherController extends Controller
             ];
         }
 
-        // 2. Consultar Clima actual, Pronóstico por hora y Pronóstico de 7 días
         $weatherResponse = Http::get('https://api.open-meteo.com/v1/forecast', [
             'latitude' => $selectedCity->latitude,
             'longitude' => $selectedCity->longitude,
@@ -100,7 +91,6 @@ class WeatherController extends Controller
             'forecast_days' => 7
         ]);
 
-        // 3. Consultar Calidad del Aire (Métricas inferiores de tu Figma)
         $aqiResponse = Http::get('https://air-quality-api.open-meteo.com/v1/air-quality', [
             'latitude' => $selectedCity->latitude,
             'longitude' => $selectedCity->longitude,
@@ -115,7 +105,6 @@ class WeatherController extends Controller
         if ($weatherResponse->successful()) {
             $wData = $weatherResponse->json();
             
-            // Estructurar Clima Actual e inyectar detalles del día (índice 0)
             $currentWeather = $wData['current'];
             $currentWeather['icon'] = $this->getWeatherIcon($currentWeather['weather_code']);
             $currentWeather['description'] = $this->getWeatherDescription($currentWeather['weather_code']);
@@ -125,7 +114,6 @@ class WeatherController extends Controller
             $currentWeather['sunrise'] = date('g:i a', strtotime($wData['daily']['sunrise'][0]));
             $currentWeather['sunset'] = date('g:i a', strtotime($wData['daily']['sunset'][0]));
 
-            // Estructurar Pronóstico por hora (siguientes 6 intervalos desde la hora actual)
             $currentHour = (int)date('H');
             for ($i = 0; $i < 6; $i++) {
                 $index = $currentHour + $i;
@@ -138,7 +126,6 @@ class WeatherController extends Controller
                 }
             }
 
-            // Estructurar Pronóstico a 7 días (primeros 4 días destacados del diseño)
             $daysOfWeek = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
             for ($i = 0; $i < 4; $i++) {
                 $timeString = strtotime($wData['daily']['time'][$i]);
@@ -161,7 +148,93 @@ class WeatherController extends Controller
 
         return view('home', compact('selectedCity', 'cities', 'currentWeather', 'hourlyWeather', 'dailyWeather', 'airQuality'));
     }
-    // Método privado para evitar repetir la consulta a la API de Open-Meteo
+
+
+    // ==========================================
+    // SECCIÓN 3: PRONÓSTICO Y CONFIGURACIÓN
+    // ==========================================
+    
+    public function forecast(Request $request)
+    {
+        $user = Auth::user();
+        $cities = $user->favoriteCities;
+
+        // Determinar qué ciudad mostrar
+        $selectedCity = null;
+        if ($request->has('city_id')) {
+            $selectedCity = $cities->find($request->city_id);
+        }
+        if (!$selectedCity) {
+            $selectedCity = $cities->first();
+        }
+        if (!$selectedCity) {
+            $selectedCity = (object)[
+                'id' => null, 'city_name' => 'Tijuana, Baja California',
+                'latitude' => 32.5149, 'longitude' => -117.0382
+            ];
+        }
+
+        // Petición a la API para datos súper detallados (14 días y por hora)
+        $response = Http::get('https://api.open-meteo.com/v1/forecast', [
+            'latitude' => $selectedCity->latitude,
+            'longitude' => $selectedCity->longitude,
+            'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation',
+            'hourly' => 'temperature_2m,precipitation_probability',
+            'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum',
+            'timezone' => 'auto',
+            'forecast_days' => 14
+        ]);
+
+        $current = null;
+        $hourly = [];
+        $maxTempHourly = 1; // Para escalar la gráfica
+
+        if ($response->successful()) {
+            $data = $response->json();
+            
+            // 1. Datos actuales y del día
+            $current = $data['current'];
+            $current['desc'] = $this->getWeatherDescription($current['weather_code']);
+            $current['icon'] = $this->getWeatherIcon($current['weather_code']);
+            $current['max'] = round($data['daily']['temperature_2m_max'][0]);
+            $current['min'] = round($data['daily']['temperature_2m_min'][0]);
+            $current['prob_lluvia'] = $data['daily']['precipitation_probability_max'][0];
+            $current['lluvia_total'] = $data['daily']['precipitation_sum'][0];
+            
+            // Calcular dirección del viento (ej. 315° -> NO)
+            $val = floor(($current['wind_direction_10m'] / 22.5) + 0.5);
+            $arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SO", "OSO", "O", "ONO", "NO", "NNO"];
+            $current['wind_dir_text'] = $arr[($val % 16)];
+
+            // 2. Datos por hora (próximas 12 horas)
+            $currentHour = (int)date('H');
+            for ($i = 0; $i <= 11; $i++) {
+                $idx = $currentHour + $i;
+                if (isset($data['hourly']['time'][$idx])) {
+                    $temp = round($data['hourly']['temperature_2m'][$idx]);
+                    $hourly[] = [
+                        'time' => date('H:i', strtotime($data['hourly']['time'][$idx])),
+                        'temp' => $temp,
+                        'prob' => $data['hourly']['precipitation_probability'][$idx]
+                    ];
+                    if ($temp > $maxTempHourly) $maxTempHourly = $temp;
+                }
+            }
+        }
+
+        return view('forecast', compact('selectedCity', 'cities', 'current', 'hourly', 'maxTempHourly'));
+    }
+
+    public function settings()
+    {
+        return view('settings');
+    }
+
+
+    // ==========================================
+    // SECCIÓN 4: FUNCIONES PRIVADAS (Helpers)
+    // ==========================================
+
     private function saveCity($name, $cityModel = null)
     {
         $response = Http::get('https://geocoding-api.open-meteo.com/v1/search', [
@@ -193,7 +266,6 @@ class WeatherController extends Controller
         return back()->withErrors(['city_name' => 'No se encontró la ubicación exacta.']);
     }
 
-    // Traduce los códigos de Open-Meteo a emojis
     private function getWeatherIcon($code)
     {
         $icons = [
@@ -205,7 +277,6 @@ class WeatherController extends Controller
         return $icons[$code] ?? '☁️';
     }
 
-    // Traduce los códigos de Open-Meteo a descripciones en español
     private function getWeatherDescription($code)
     {
         $descriptions = [
