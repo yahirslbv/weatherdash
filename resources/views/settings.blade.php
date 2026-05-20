@@ -3,6 +3,16 @@
          x-data="{ 
             activeTab: 'unidades', 
             savedSuccess: false,
+            
+            // Preferencias guardadas localmente
+            prefTemp: $persist('C'),
+            prefWind: $persist('kmh'),
+            prefDist: $persist('km'),
+            prefPress: $persist('hpa'),
+            notifCritical: $persist(true),
+            notifDaily: $persist(true),
+            notifRain: $persist(false),
+
             triggerSave() {
                 this.savedSuccess = true;
                 setTimeout(() => this.savedSuccess = false, 3500);
@@ -95,31 +105,31 @@
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
                                 <div>
                                     <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Temperatura</label>
-                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
-                                        <option>Celsius (°C)</option>
-                                        <option>Fahrenheit (°F)</option>
+                                    <select x-model="prefTemp" class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option value="C">Celsius (°C)</option>
+                                        <option value="F">Fahrenheit (°F)</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Velocidad del viento</label>
-                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
-                                        <option>km/h</option>
-                                        <option>mph</option>
-                                        <option>m/s</option>
+                                    <select x-model="prefWind" class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option value="kmh">km/h</option>
+                                        <option value="mph">mph</option>
+                                        <option value="ms">m/s</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Distancia / Visibilidad</label>
-                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
-                                        <option>Kilómetros (km)</option>
-                                        <option>Millas (mi)</option>
+                                    <select x-model="prefDist" class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option value="km">Kilómetros (km)</option>
+                                        <option value="mi">Millas (mi)</option>
                                     </select>
                                 </div>
                                 <div>
                                     <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Presión atmosférica</label>
-                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
-                                        <option>Hectopascales (hPa)</option>
-                                        <option>Milímetros de mercurio (mmHg)</option>
+                                    <select x-model="prefPress" class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option value="hpa">Hectopascales (hPa)</option>
+                                        <option value="mmhg">Milímetros de mercurio (mmHg)</option>
                                     </select>
                                 </div>
                             </div>
@@ -136,7 +146,7 @@
                                         <p class="text-sm text-[#829AB1] font-medium mt-0.5">Recibir avisos de tormentas y eventos extremos.</p>
                                     </div>
                                     <div class="relative">
-                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <input type="checkbox" x-model="notifCritical" class="sr-only peer">
                                         <div class="w-11 h-6 bg-[#0B132B] border border-[#1E2D56] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                     </div>
                                 </label>
@@ -147,8 +157,19 @@
                                         <p class="text-sm text-[#829AB1] font-medium mt-0.5">Notificación matutina con el pronóstico del día.</p>
                                     </div>
                                     <div class="relative">
-                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <input type="checkbox" x-model="notifDaily" class="sr-only peer">
                                         <div class="w-11 h-6 bg-[#0B132B] border border-[#1E2D56] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </div>
+                                </label>
+                                <div class="border-t border-[#1E2D56]/50"></div>
+                                <label class="flex items-center justify-between cursor-pointer group">
+                                    <div>
+                                        <p class="font-bold text-white text-base">Alerta de lluvia</p>
+                                        <p class="text-sm text-[#829AB1] font-medium mt-0.5">Notificar 1 hora antes de que comience a llover.</p>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="checkbox" x-model="notifRain" class="sr-only peer">
+                                        <div class="w-11 h-6 bg-[#0B132B] border border-[#1E2D56] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-[#829AB1] after:border-[#829AB1] after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600 peer-checked:after:bg-white"></div>
                                     </div>
                                 </label>
                             </div>
