@@ -21,21 +21,29 @@ class WeatherController extends Controller
         foreach ($cities as $city) {
             $cacheKey = "weather_dashboard_{$city->latitude}_{$city->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
             
-            $weatherData = Cache::remember($cacheKey, 3600, function () use ($city) {
+            $fullData = Cache::remember($cacheKey, 3600, function () use ($city) {
                 $response = Http::get('https://api.open-meteo.com/v1/forecast', [
                     'latitude' => $city->latitude,
                     'longitude' => $city->longitude,
                     'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
+                    'daily' => 'temperature_2m_max,temperature_2m_min',
                     'timezone' => 'auto',
                     'temperature_unit' => session('pref_temp', 'celsius'),
                     'wind_speed_unit' => session('pref_wind', 'kmh'),
                 ]);
-                return $response->successful() ? $response->json()['current'] : null;
+                return $response->successful() ? $response->json() : null;
             });
 
-            if ($weatherData) {
+            if ($fullData) {
+                $weatherData = $fullData['current'];
                 $weatherData['icon'] = $this->getWeatherIcon($weatherData['weather_code']);
                 $weatherData['description'] = $this->getWeatherDescription($weatherData['weather_code']);
+                
+                if (isset($fullData['daily'])) {
+                    $weatherData['max'] = round($fullData['daily']['temperature_2m_max'][0]);
+                    $weatherData['min'] = round($fullData['daily']['temperature_2m_min'][0]);
+                }
+
                 $city->weather = $weatherData;
             }
         }
@@ -86,7 +94,7 @@ class WeatherController extends Controller
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
                 'latitude' => $selectedCity->latitude,
                 'longitude' => $selectedCity->longitude,
-                'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation,visibility,surface_pressure',
+                'current' => 'temperature_2m,relative_humidity_2m,apparent_temperature,wind_speed_10m,wind_direction_10m,weather_code,precipitation,visibility,surface_pressure',
                 'hourly' => 'temperature_2m,weather_code',
                 'daily' => 'temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset,weather_code,precipitation_probability_max',
                 'timezone' => 'auto',
