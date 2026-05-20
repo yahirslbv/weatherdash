@@ -86,7 +86,7 @@ class WeatherController extends Controller
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
                 'latitude' => $selectedCity->latitude,
                 'longitude' => $selectedCity->longitude,
-                'current' => 'temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,visibility,surface_pressure',
+                'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation,visibility,surface_pressure',
                 'hourly' => 'temperature_2m,weather_code',
                 'daily' => 'temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset,weather_code,precipitation_probability_max',
                 'timezone' => 'auto',
@@ -162,12 +162,17 @@ class WeatherController extends Controller
             $selectedCity = (object)['id' => null, 'city_name' => 'Tijuana, Baja California', 'latitude' => 32.5149, 'longitude' => -117.0382];
         }
 
-        $cacheKeyForecast = "weather_forecast_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
+        // TRUCO 1: Cambiamos el nombre de la caché agregando "v2" para forzar a que ignore la memoria vieja
+        $cacheKeyForecast = "forecast_v2_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
+        
         $data = Cache::remember($cacheKeyForecast, 3600, function () use ($selectedCity) {
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
                 'latitude' => $selectedCity->latitude,
                 'longitude' => $selectedCity->longitude,
-                'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation',
+                
+                // Aseguramos que la API realmente nos mande 'visibility' y 'surface_pressure'
+                'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation,visibility,surface_pressure',
+                
                 'hourly' => 'temperature_2m,precipitation_probability',
                 'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code',
                 'timezone' => 'auto',
@@ -187,13 +192,21 @@ class WeatherController extends Controller
             $current['max'] = round($data['daily']['temperature_2m_max'][0]);
             $current['min'] = round($data['daily']['temperature_2m_min'][0]);
             
-            // LÍNEAS RESTAURADAS QUE HACÍAN FALTA
             $current['prob_lluvia'] = $data['daily']['precipitation_probability_max'][0];
             $current['lluvia_total'] = $data['daily']['precipitation_sum'][0];
 
-            // Convertir visibilidad y presión según preferencias
-            $current['vis_val'] = session('pref_dist', 'km') === 'mi' ? round($current['visibility'] / 1609.34) : round($current['visibility'] / 1000);
-            $current['press_val'] = session('pref_press', 'hpa') === 'mmhg' ? round($current['surface_pressure'] * 0.750062) : round($current['surface_pressure']);
+            // TRUCO 2: Validamos que exista antes de hacer la matemática (evita que la vista colapse)
+            if (isset($current['visibility'])) {
+                $current['vis_val'] = session('pref_dist', 'km') === 'mi' ? round($current['visibility'] / 1609.34) : round($current['visibility'] / 1000);
+            } else {
+                $current['vis_val'] = 0; // Valor de rescate
+            }
+
+            if (isset($current['surface_pressure'])) {
+                $current['press_val'] = session('pref_press', 'hpa') === 'mmhg' ? round($current['surface_pressure'] * 0.750062) : round($current['surface_pressure']);
+            } else {
+                $current['press_val'] = 0; // Valor de rescate
+            }
 
             $arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SO", "OSO", "O", "ONO", "NO", "NNO"];
             $current['wind_dir_text'] = $arr[floor(($current['wind_direction_10m'] / 22.5) + 0.5) % 16];
