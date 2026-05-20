@@ -1,101 +1,207 @@
 <x-app-layout>
-    <div class="py-8 bg-gray-50 min-h-screen">
-        <div class="max-w-4xl mx-auto sm:px-6 lg:px-8">
+    <div class="py-8 bg-[#0B132B] min-h-screen font-sans text-slate-200" 
+         x-data="{ 
+            activeTab: 'unidades', 
+            savedSuccess: false,
+            triggerSave() {
+                this.savedSuccess = true;
+                setTimeout(() => this.savedSuccess = false, 3500);
+            }
+         }">
+        <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
             
-            <div class="mb-8">
-                <h2 class="text-3xl font-bold text-slate-800 tracking-tight">Configuración</h2>
-                <p class="text-slate-500 mt-1">Personaliza tu experiencia dentro del panel WeatherDash</p>
+            <div class="mb-10">
+                <h2 class="text-[28px] font-bold text-white tracking-tight leading-tight">Configuración</h2>
+                <p class="text-[#829AB1] mt-1 font-medium">Personaliza tu experiencia en WeatherDash</p>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="space-y-1">
-                    <button class="w-full text-left bg-white text-blue-600 font-semibold px-4 py-3 rounded-xl shadow-sm border-l-4 border-blue-500 text-sm">General & Unidades</button>
-                    <button class="w-full text-left text-slate-600 hover:bg-white px-4 py-3 rounded-xl text-sm transition">Notificaciones</button>
-                    <button class="w-full text-left text-slate-600 hover:bg-white px-4 py-3 rounded-xl text-sm transition">Apariencia</button>
-                    <button class="w-full text-left text-slate-600 hover:bg-white px-4 py-3 rounded-xl text-sm transition">API & Datos</button>
+            <div x-show="savedSuccess" 
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 transform -translate-y-4"
+                 x-transition:enter-end="opacity-100 transform translate-y-0"
+                 x-transition:leave="transition ease-in duration-200"
+                 x-transition:leave-start="opacity-100 transform translate-y-0"
+                 x-transition:leave-end="opacity-0 transform -translate-y-4"
+                 class="mb-6 bg-[#15203D] border border-[#4ADE80]/30 text-[#4ADE80] px-5 py-3 rounded-xl shadow-lg flex items-center gap-3"
+                 style="display: none;">
+                <span>✨</span> ¡Cambios guardados correctamente en tus preferencias locales!
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-4 gap-8">
+                
+                <div class="lg:col-span-1">
+                    <div class="bg-[#15203D] rounded-[24px] border border-[#1E2D56] p-2 space-y-1 sticky top-8">
+                        
+                        <button @click="activeTab = 'unidades'" 
+                                :class="activeTab === 'unidades' ? 'bg-[#0B132B] text-blue-400 border border-[#1E2D56] shadow-inner' : 'text-[#829AB1] hover:text-white hover:bg-[#0B132B]/30'"
+                                class="w-full text-left font-bold px-5 py-3 rounded-xl text-sm flex items-center justify-between transition-all duration-150">
+                            Unidades & General
+                            <div x-show="activeTab === 'unidades'" class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        </button>
+                        
+                        <button @click="activeTab = 'notificaciones'" 
+                                :class="activeTab === 'notificaciones' ? 'bg-[#0B132B] text-blue-400 border border-[#1E2D56] shadow-inner' : 'text-[#829AB1] hover:text-white hover:bg-[#0B132B]/30'"
+                                class="w-full text-left font-bold px-5 py-3 rounded-xl text-sm flex items-center justify-between transition-all duration-150">
+                            Notificaciones
+                            <div x-show="activeTab === 'notificaciones'" class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        </button>
+                        
+                        <button @click="activeTab = 'apariencia'" 
+                                :class="activeTab === 'apariencia' ? 'bg-[#0B132B] text-blue-400 border border-[#1E2D56] shadow-inner' : 'text-[#829AB1] hover:text-white hover:bg-[#0B132B]/30'"
+                                class="w-full text-left font-bold px-5 py-3 rounded-xl text-sm flex items-center justify-between transition-all duration-150">
+                            Apariencia
+                            <div x-show="activeTab === 'apariencia'" class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        </button>
+                        
+                        <button @click="activeTab = 'api'" 
+                                :class="activeTab === 'api' ? 'bg-[#0B132B] text-blue-400 border border-[#1E2D56] shadow-inner' : 'text-[#829AB1] hover:text-white hover:bg-[#0B132B]/30'"
+                                class="w-full text-left font-bold px-5 py-3 rounded-xl text-sm flex items-center justify-between transition-all duration-150">
+                            API & Datos
+                            <div x-show="activeTab === 'api'" class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                        </button>
+
+                        <div class="pt-4 mt-4 border-t border-[#1E2D56]/50">
+                            <button @click="activeTab = 'acerca'" 
+                                    :class="activeTab === 'acerca' ? 'bg-[#0B132B] text-blue-400 border border-[#1E2D56] shadow-inner' : 'text-[#829AB1] hover:text-white hover:bg-[#0B132B]/30'"
+                                    class="w-full text-left font-bold px-5 py-3 rounded-xl text-sm flex items-center justify-between transition-all duration-150">
+                                Acerca de
+                                <div x-show="activeTab === 'acerca'" class="w-1.5 h-1.5 bg-blue-500 rounded-full"></div>
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="md:col-span-2 space-y-6">
+                <div class="lg:col-span-3 space-y-6">
                     
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 flex items-center justify-between">
-                        <div class="flex items-center gap-4">
-                            <div class="w-14 h-14 bg-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold shadow-inner">
-                                VB
+                    <div class="bg-[#15203D] rounded-[24px] shadow-lg border border-[#1E2D56] p-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+                        <div class="flex items-center gap-5 w-full sm:w-auto">
+                            <div class="w-16 h-16 bg-gradient-to-br from-blue-500 to-blue-700 rounded-full flex items-center justify-center text-white text-2xl font-extrabold shadow-lg shrink-0">
+                                {{ collect(explode(' ', Auth::user()->name))->map(function($n) { return substr($n, 0, 1); })->take(2)->implode('') }}
                             </div>
                             <div>
-                                <h3 class="font-bold text-slate-800 text-lg">{{ Auth::user()->name }}</h3>
-                                <p class="text-sm text-slate-400">{{ Auth::user()->email }}</p>
-                                <span class="text-xs bg-blue-50 text-blue-600 px-2 py-0.5 rounded font-medium mt-1 inline-block">Plan Estudiantil UABC</span>
+                                <h3 class="font-extrabold text-white text-xl">{{ Auth::user()->name }}</h3>
+                                <p class="text-sm text-[#829AB1] font-medium">{{ Auth::user()->email }}</p>
+                                <span class="text-xs bg-[#0B132B] border border-[#1E2D56] text-blue-400 px-3 py-1 rounded-lg font-bold mt-2 inline-block">Plan Estudiantil UABC</span>
                             </div>
                         </div>
-                        <a href="{{ route('profile.edit') }}" class="text-sm bg-slate-50 hover:bg-slate-100 text-slate-700 font-medium px-4 py-2 rounded-xl border border-gray-200 transition">
-                            Editar
+                        <a href="{{ route('profile.edit') }}" class="text-sm w-full sm:w-auto text-center bg-[#0B132B] hover:bg-[#1E2D56] text-white font-bold px-6 py-3 rounded-xl border border-[#1E2D56] transition shadow-sm">
+                            Editar Perfil
                         </a>
                     </div>
 
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-6">
-                        <h3 class="text-lg font-bold text-slate-800 border-b border-gray-100 pb-3">Unidades de Medida</h3>
-                        
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                            <div>
-                                <label class="block text-sm font-medium text-slate-600">Temperatura</label>
-                                <select class="mt-1 block w-full border-gray-200 rounded-xl bg-slate-50 text-slate-800 text-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option>Celsius (°C)</option>
-                                    <option>Fahrenheit (°F)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-slate-600">Velocidad del viento</label>
-                                <select class="mt-1 block w-full border-gray-200 rounded-xl bg-slate-50 text-slate-800 text-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option>km/h</option>
-                                    <option>m/s</option>
-                                    <option>mph</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-slate-600">Distancia / Visibilidad</label>
-                                <select class="mt-1 block w-full border-gray-200 rounded-xl bg-slate-50 text-slate-800 text-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option>Kilómetros (km)</option>
-                                    <option>Millas (mi)</option>
-                                </select>
-                            </div>
-
-                            <div>
-                                <label class="block text-sm font-medium text-slate-600">Presión atmosférica</label>
-                                <select class="mt-1 block w-full border-gray-200 rounded-xl bg-slate-50 text-slate-800 text-sm focus:ring-blue-500 focus:border-blue-500">
-                                    <option>Hectopascales (hPa)</option>
-                                    <option>Milímetros de mercurio (mmHg)</option>
-                                </select>
+                    <div x-show="activeTab === 'unidades'" x-transition:enter="transition ease-out duration-150" class="space-y-6">
+                        <div class="bg-[#15203D] rounded-[24px] shadow-lg border border-[#1E2D56] p-8">
+                            <h3 class="text-lg font-bold text-white border-b border-[#1E2D56] pb-4 mb-6">Unidades de Medida</h3>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Temperatura</label>
+                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option>Celsius (°C)</option>
+                                        <option>Fahrenheit (°F)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Velocidad del viento</label>
+                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option>km/h</option>
+                                        <option>mph</option>
+                                        <option>m/s</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Distancia / Visibilidad</label>
+                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option>Kilómetros (km)</option>
+                                        <option>Millas (mi)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Presión atmosférica</label>
+                                    <select class="w-full border-[#1E2D56] bg-[#0B132B] rounded-xl shadow-inner text-sm font-semibold text-white focus:ring-blue-500 p-3">
+                                        <option>Hectopascales (hPa)</option>
+                                        <option>Milímetros de mercurio (mmHg)</option>
+                                    </select>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 space-y-4">
-                        <h3 class="text-lg font-bold text-slate-800 border-b border-gray-100 pb-3">Notificaciones Integradas</h3>
-                        
-                        <div class="space-y-3">
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <div class="text-sm">
-                                    <p class="font-semibold text-slate-700">Alertas meteorológicas críticas</p>
-                                    <p class="text-xs text-slate-400">Recibir avisos automáticos sobre tormentas o eventos extremos.</p>
-                                </div>
-                            </label>
+                    <div x-show="activeTab === 'notificaciones'" style="display: none;" x-transition:enter="transition ease-out duration-150" class="space-y-6">
+                        <div class="bg-[#15203D] rounded-[24px] shadow-lg border border-[#1E2D56] p-8">
+                            <h3 class="text-lg font-bold text-white border-b border-[#1E2D56] pb-4 mb-6">Preferencias de Notificaciones</h3>
+                            <div class="space-y-6">
+                                <label class="flex items-center justify-between cursor-pointer group">
+                                    <div>
+                                        <p class="font-bold text-white text-base">Alertas meteorológicas críticas</p>
+                                        <p class="text-sm text-[#829AB1] font-medium mt-0.5">Recibir avisos de tormentas y eventos extremos.</p>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-[#0B132B] border border-[#1E2D56] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </div>
+                                </label>
+                                <div class="border-t border-[#1E2D56]/50"></div>
+                                <label class="flex items-center justify-between cursor-pointer group">
+                                    <div>
+                                        <p class="font-bold text-white text-base">Resumen diario matutino</p>
+                                        <p class="text-sm text-[#829AB1] font-medium mt-0.5">Notificación matutina con el pronóstico del día.</p>
+                                    </div>
+                                    <div class="relative">
+                                        <input type="checkbox" class="sr-only peer" checked>
+                                        <div class="w-11 h-6 bg-[#0B132B] border border-[#1E2D56] rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-slate-300 after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
 
-                            <label class="flex items-center gap-3 cursor-pointer">
-                                <input type="checkbox" checked class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
-                                <div class="text-sm">
-                                    <p class="font-semibold text-slate-700">Resumen diario matutino</p>
-                                    <p class="text-xs text-slate-400">Notificación con el pronóstico general al comenzar el día.</p>
+                    <div x-show="activeTab === 'apariencia'" style="display: none;" x-transition:enter="transition ease-out duration-150" class="space-y-6">
+                        <div class="bg-[#15203D] rounded-[24px] shadow-lg border border-[#1E2D56] p-8">
+                            <h3 class="text-lg font-bold text-white border-b border-[#1E2D56] pb-4 mb-6">Interfaz y Apariencia</h3>
+                            <label class="flex items-center justify-between cursor-pointer group">
+                                <div>
+                                    <p class="font-bold text-white text-base">Modo Oscuro Permanente</p>
+                                    <p class="text-sm text-[#829AB1] font-medium mt-0.5">Mantener la paleta de colores azul oscuro profunda de WeatherDash.</p>
+                                </div>
+                                <div class="relative">
+                                    <input type="checkbox" class="sr-only peer" checked disabled>
+                                    <div class="w-11 h-6 bg-[#0B132B] border border-[#1E2D56] rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2.5-rem] after:translate-x-full after:bg-white after:rounded-full after:h-5 after:w-5 opacity-80"></div>
                                 </div>
                             </label>
                         </div>
                     </div>
 
-                    <div class="flex justify-end">
-                        <button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-6 py-3 rounded-xl shadow transition">
+                    <div x-show="activeTab === 'api'" style="display: none;" x-transition:enter="transition ease-out duration-150" class="space-y-6">
+                        <div class="bg-[#15203D] rounded-[24px] shadow-lg border border-[#1E2D56] p-8">
+                            <h3 class="text-lg font-bold text-white border-b border-[#1E2D56] pb-4 mb-6">Proveedor de Datos</h3>
+                            <div class="space-y-4">
+                                <div class="bg-[#0B132B]/50 p-4 rounded-xl border border-[#1E2D56] text-sm">
+                                    <p class="font-bold text-white">API Meteorológica Activa</p>
+                                    <p class="text-[#829AB1] mt-1">Open-Meteo API (Servicio de pronóstico libre y gratuito para desarrollo académico).</p>
+                                </div>
+                                <div class="bg-[#0B132B]/50 p-4 rounded-xl border border-[#1E2D56] text-sm">
+                                    <p class="font-bold text-white">API Complementaria de Contaminación</p>
+                                    <p class="text-[#829AB1] mt-1">Open-Meteo Air Quality API (Métricas de AQI, PM2.5 y PM10).</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div x-show="activeTab === 'acerca'" style="display: none;" x-transition:enter="transition ease-out duration-150" class="space-y-6">
+                        <div class="bg-[#15203D] rounded-[24px] shadow-lg border border-[#1E2D56] p-8 text-sm space-y-4">
+                            <h3 class="text-lg font-bold text-white border-b border-[#1E2D56] pb-4 mb-2">Acerca del Proyecto</h3>
+                            <p class="leading-relaxed text-[#829AB1]">
+                                <strong class="text-white">WeatherDash V1.0</strong> es un panel avanzado de control y visualización meteorológica diseñado bajo altos estándares de UI/UX y maquetado píxel por píxel con Tailwind CSS.
+                            </p>
+                            <p class="text-xs text-[#829AB1] pt-4 border-t border-[#1E2D56]/50">
+                                Entorno de Desarrollo • Laravel 12 & Alpine.js
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-2">
+                        <button @click="triggerSave()" 
+                                class="bg-blue-600 hover:bg-blue-500 text-white font-bold px-8 py-3.5 rounded-xl shadow-lg transition-all active:scale-98">
                             Guardar cambios
                         </button>
                     </div>
