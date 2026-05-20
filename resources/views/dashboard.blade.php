@@ -7,7 +7,6 @@
             city2: null,
             openCompareModal() {
                 if(this.selectedCities.length === 2) {
-                    // Extraer los datos de las tarjetas usando el DOM (sin recargar la página)
                     let c1Element = document.getElementById('city-data-' + this.selectedCities[0]);
                     let c2Element = document.getElementById('city-data-' + this.selectedCities[1]);
                     
@@ -104,8 +103,9 @@
                             
                             <div class="mt-6 flex justify-between items-end">
                                 <div>
+                                    {{-- ✅ CORRECCIÓN 1: unidad dinámica en temperatura principal --}}
                                     <div class="text-[56px] font-light text-white leading-none tracking-tighter">
-                                        {{ isset($city->weather) ? round($city->weather['temperature_2m']) : '--' }}<span class="text-2xl text-[#829AB1] font-normal">°</span>
+                                        {{ isset($city->weather) ? round($city->weather['temperature_2m']) : '--' }}<span class="text-2xl text-[#829AB1] font-normal">{{ $units['temp'] }}</span>
                                     </div>
                                     <p class="text-blue-400 font-bold text-sm mt-2">
                                         {{ $city->weather['description'] ?? 'Pendiente...' }}
@@ -117,9 +117,10 @@
                             </div>
 
                             <div class="mt-6 grid grid-cols-3 gap-2 border-t border-[#1E2D56] pt-4 text-xs font-bold text-white text-center">
+                                {{-- ✅ CORRECCIÓN 2: unidad dinámica en MÁX/MÍN --}}
                                 <div class="bg-[#0B132B]/50 py-2 rounded-xl border border-[#1E2D56]/50">
                                     <span class="block text-[#829AB1] mb-0.5">MÁX/MÍN</span>
-                                    --°/--°
+                                    --{{ $units['temp'] }}/--{{ $units['temp'] }}
                                 </div>
                                 <div class="bg-[#0B132B]/50 py-2 rounded-xl border border-[#1E2D56]/50">
                                     <span class="block text-[#829AB1] mb-0.5">HUMEDAD</span>
@@ -195,7 +196,7 @@
                                     <h4 class="text-2xl font-extrabold text-white mb-2" x-text="city1?.name"></h4>
                                     <p class="text-sm font-bold text-blue-400 mb-8" x-text="city1?.desc"></p>
                                     <div class="text-[80px] leading-none mb-6 drop-shadow-lg" x-text="city1?.icon"></div>
-                                    <div class="text-6xl font-light text-white mb-8"><span x-text="city1?.temp"></span><span class="text-3xl text-[#829AB1] font-normal">°</span></div>
+                                    <div class="text-6xl font-light text-white mb-8"><span x-text="city1?.temp"></span><span class="text-3xl text-[#829AB1] font-normal">{{ $units['temp'] }}</span></div>
                                     
                                     <div class="bg-[#0B132B]/40 rounded-xl p-4 border border-[#1E2D56]/50 grid grid-cols-2 gap-4">
                                         <div>
@@ -219,7 +220,7 @@
                                     <h4 class="text-2xl font-extrabold text-white mb-2" x-text="city2?.name"></h4>
                                     <p class="text-sm font-bold text-blue-400 mb-8" x-text="city2?.desc"></p>
                                     <div class="text-[80px] leading-none mb-6 drop-shadow-lg" x-text="city2?.icon"></div>
-                                    <div class="text-6xl font-light text-white mb-8"><span x-text="city2?.temp"></span><span class="text-3xl text-[#829AB1] font-normal">°</span></div>
+                                    <div class="text-6xl font-light text-white mb-8"><span x-text="city2?.temp"></span><span class="text-3xl text-[#829AB1] font-normal">{{ $units['temp'] }}</span></div>
                                     
                                     <div class="bg-[#0B132B]/40 rounded-xl p-4 border border-[#1E2D56]/50 grid grid-cols-2 gap-4">
                                         <div>
