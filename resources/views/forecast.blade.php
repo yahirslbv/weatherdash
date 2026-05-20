@@ -47,7 +47,7 @@
                             <div class="flex items-center gap-4 sm:border-l border-[#1E2D56] sm:pl-6 w-full sm:w-auto justify-center">
                                 <span class="text-5xl select-none leading-none">{{ $current['icon'] }}</span>
                                 <span class="text-[72px] font-light text-white tracking-tighter leading-none relative">
-                                    {{ round($current['temperature_2m']) }}<span class="text-3xl text-[#829AB1] font-normal absolute ml-1 top-2">°C</span>
+                                    {{ round($current['temperature_2m']) }}<span class="text-3xl text-[#829AB1] font-normal absolute ml-1 top-2">{{ $units['temp'] }}</span>
                                 </span>
                             </div>
                         </div>
@@ -56,7 +56,7 @@
                             <div class="grid grid-cols-2 sm:grid-cols-3 gap-6 text-sm">
                                 <div><p class="text-[#829AB1] font-semibold text-xs uppercase tracking-wider mb-1">Máx / Mín</p><p class="font-bold text-white text-base">{{ $current['max'] }}° <span class="text-[#829AB1] font-normal text-sm">/ {{ $current['min'] }}°</span></p></div>
                                 <div><p class="text-[#829AB1] font-semibold text-xs uppercase tracking-wider mb-1">Prob. Lluvia</p><p class="font-bold text-blue-400 text-base">{{ $current['prob_lluvia'] }}%</p></div>
-                                <div><p class="text-[#829AB1] font-semibold text-xs uppercase tracking-wider mb-1">Viento</p><p class="font-bold text-white text-base">{{ round($current['wind_speed_10m']) }} km/h <span class="text-xs text-[#829AB1] font-medium">({{ $current['wind_dir_text'] }})</span></p></div>
+                                <div><p class="text-[#829AB1] font-semibold text-xs uppercase tracking-wider mb-1">Viento</p><p class="font-bold text-white text-base">{{ round($current['wind_speed_10m']) }} {{ $units['wind'] }} <span class="text-xs text-[#829AB1] font-medium">({{ $current['wind_dir_text'] }})</span></p></div>
                                 <div><p class="text-[#829AB1] font-semibold text-xs uppercase tracking-wider mb-1">Precipitación</p><p class="font-bold text-white text-base">{{ $current['lluvia_total'] }} mm</p></div>
                                 <div><p class="text-[#829AB1] font-semibold text-xs uppercase tracking-wider mb-1">Humedad</p><p class="font-bold text-white text-base">{{ $current['relative_humidity_2m'] }}%</p></div>
                                 <div><p class="text-[#829AB1] font-semibold text-xs uppercase tracking-wider mb-1">Condición</p><p class="font-bold text-blue-400 text-sm truncate">Estable</p></div>
@@ -127,11 +127,11 @@
                                 <h4 class="text-xs font-bold text-[#829AB1] uppercase tracking-wider mb-2">Viento</h4>
                                 <div class="flex items-baseline gap-1.5 mb-4">
                                     <span class="text-3xl font-extrabold text-white">{{ round($current['wind_speed_10m']) }}</span>
-                                    <span class="text-sm font-semibold text-[#829AB1]">km/h</span>
+                                    <span class="text-sm font-semibold text-[#829AB1]">{{ $units['wind'] }}</span>
                                 </div>
                                 <div class="space-y-2 text-sm">
                                     <div class="flex justify-between items-center bg-[#0B132B]/40 px-3 py-2 rounded-xl border border-[#1E2D56]/50"><span class="text-[#829AB1] font-medium">Dirección</span><span class="font-bold text-white">{{ $current['wind_dir_text'] }} ({{ $current['wind_direction_10m'] }}°)</span></div>
-                                    <div class="flex justify-between items-center bg-[#0B132B]/40 px-3 py-2 rounded-xl border border-[#1E2D56]/50"><span class="text-[#829AB1] font-medium">Ráfagas</span><span class="font-bold text-white">Hasta {{ round($current['wind_speed_10m'] * 1.4) }} km/h</span></div>
+                                    <div class="flex justify-between items-center bg-[#0B132B]/40 px-3 py-2 rounded-xl border border-[#1E2D56]/50"><span class="text-[#829AB1] font-medium">Ráfagas</span><span class="font-bold text-white">Hasta {{ round($current['wind_speed_10m'] * 1.4) }} {{ $units['wind'] }}</span></div>
                                 </div>
                             </div>
                         </div>

@@ -45,13 +45,13 @@
                                     </div>
                                 </div>
                                 <div class="text-left sm:text-right mt-4 sm:mt-0">
-                                    <div class="text-[80px] font-light leading-none tracking-tighter">{{ round($currentWeather['temperature_2m']) }}<span class="text-5xl font-light text-blue-100">°C</span></div>
+                                    <div class="text-[80px] font-light leading-none tracking-tighter">{{ round($currentWeather['temperature_2m']) }}<span class="text-5xl font-light text-blue-100">{{ $units['temp'] }}</span></div>
                                 </div>
                             </div>
                             
                             <div class="relative z-10 mt-12 flex flex-col sm:flex-row items-start sm:items-end justify-between border-t border-blue-400/20 pt-5 gap-4">
                                 <div class="text-sm space-y-1">
-                                    <p class="text-blue-200">Sensación térmica: <span class="font-bold text-white">{{ round($currentWeather['apparent_temperature']) }}°C</span></p>
+                                    <p class="text-blue-200">Sensación térmica: <span class="font-bold text-white">{{ round($currentWeather['apparent_temperature']) }}{{ $units['temp'] }}</span></p>
                                     <p class="text-blue-200">Rango del día: <span class="font-bold text-white">Máx {{ $currentWeather['max'] }}° / Mín {{ $currentWeather['min'] }}°</span></p>
                                 </div>
                                 <div class="text-xs font-medium text-blue-200/60 bg-black/20 px-3 py-1.5 rounded-lg">
@@ -124,17 +124,17 @@
                                 <div class="bg-[#15203D] rounded-[20px] shadow-lg border border-[#1E2D56] p-5 text-center">
                                     <span class="text-2xl block mb-2 opacity-80">💨</span>
                                     <p class="text-xs font-bold text-[#829AB1] uppercase mb-1">Viento</p>
-                                    <p class="text-xl font-extrabold text-white">{{ round($currentWeather['wind_speed_10m']) }} <span class="text-xs font-medium text-[#829AB1]">km/h</span></p>
+                                    <p class="text-xl font-extrabold text-white">{{ round($currentWeather['wind_speed_10m']) }} <span class="text-xs font-medium text-[#829AB1]">{{ $units['wind'] }}</span></p>
                                 </div>
                                 <div class="bg-[#15203D] rounded-[20px] shadow-lg border border-[#1E2D56] p-5 text-center">
                                     <span class="text-2xl block mb-2 opacity-80">👁️</span>
                                     <p class="text-xs font-bold text-[#829AB1] uppercase mb-1">Visib.</p>
-                                    <p class="text-xl font-extrabold text-white">{{ round($currentWeather['visibility'] / 1000) }} <span class="text-xs font-medium text-[#829AB1]">km</span></p>
+                                    <p class="text-xl font-extrabold text-white">{{ $currentWeather['vis_val'] }} <span class="text-xs font-medium text-[#829AB1]">{{ $units['dist'] }}</span></p>
                                 </div>
                                 <div class="bg-[#15203D] rounded-[20px] shadow-lg border border-[#1E2D56] p-5 text-center">
                                     <span class="text-2xl block mb-2 opacity-80">⏱️</span>
                                     <p class="text-xs font-bold text-[#829AB1] uppercase mb-1">Presión</p>
-                                    <p class="text-xl font-extrabold text-white">{{ round($currentWeather['surface_pressure']) }} <span class="text-xs font-medium text-[#829AB1]">hPa</span></p>
+                                    <p class="text-xl font-extrabold text-white">{{ $currentWeather['press_val'] }} <span class="text-xs font-medium text-[#829AB1]">{{ $units['press'] }}</span></p>
                                 </div>
                             </div>
                         </div>

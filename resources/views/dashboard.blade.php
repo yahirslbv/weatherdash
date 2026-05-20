@@ -128,7 +128,7 @@
                                 </div>
                                 <div class="bg-[#0B132B]/50 py-2 rounded-xl border border-[#1E2D56]/50">
                                     <span class="block text-[#829AB1] mb-0.5">VIENTO</span>
-                                    {{ isset($city->weather) ? round($city->weather['wind_speed_10m']) : '--' }} <span class="text-[10px] text-[#829AB1] font-medium">km/h</span>
+                                    {{ isset($city->weather) ? round($city->weather['wind_speed_10m']) : '--' }} <span class="text-[10px] text-[#829AB1] font-medium">{{ $units['wind'] }}</span>
                                 </div>
                             </div>
                         </div>
@@ -205,7 +205,7 @@
                                         </div>
                                         <div>
                                             <p class="text-[10px] font-bold text-[#829AB1] uppercase tracking-wider mb-1">Viento</p>
-                                            <p class="text-lg font-bold text-white"><span x-text="city1?.wind"></span> <span class="text-xs font-normal text-[#829AB1]">km/h</span></p>
+                                            <p class="text-lg font-bold text-white"><span x-text="city1?.wind"></span> <span class="text-xs font-normal text-[#829AB1]">{{ $units['wind'] }}</span></p>
                                         </div>
                                     </div>
                                 </div>
@@ -229,7 +229,7 @@
                                         </div>
                                         <div>
                                             <p class="text-[10px] font-bold text-[#829AB1] uppercase tracking-wider mb-1">Viento</p>
-                                            <p class="text-lg font-bold text-white"><span x-text="city2?.wind"></span> <span class="text-xs font-normal text-[#829AB1]">km/h</span></p>
+                                            <p class="text-lg font-bold text-white"><span x-text="city2?.wind"></span> <span class="text-xs font-normal text-[#829AB1]">{{ $units['wind'] }}</span></p>
                                         </div>
                                     </div>
                                 </div>

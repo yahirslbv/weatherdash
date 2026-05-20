@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use App\Models\FavoriteCity;
-use Illuminate\Support\Facades\Cache; // Importación necesaria para el caché
+use Illuminate\Support\Facades\Cache;
 
 class WeatherController extends Controller
 {
@@ -19,7 +19,6 @@ class WeatherController extends Controller
         $units = $this->getUnits();
 
         foreach ($cities as $city) {
-            // Optimización: Caché por ciudad y unidad de medida (1 hora)
             $cacheKey = "weather_dashboard_{$city->latitude}_{$city->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
             
             $weatherData = Cache::remember($cacheKey, 3600, function () use ($city) {
@@ -82,7 +81,6 @@ class WeatherController extends Controller
             ];
         }
 
-        // Optimización: Caché para el Clima y AQI (1 hora)
         $cacheKeyWeather = "weather_home_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
         $wData = Cache::remember($cacheKeyWeather, 3600, function () use ($selectedCity) {
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
@@ -188,6 +186,15 @@ class WeatherController extends Controller
             $current['icon'] = $this->getWeatherIcon($current['weather_code']);
             $current['max'] = round($data['daily']['temperature_2m_max'][0]);
             $current['min'] = round($data['daily']['temperature_2m_min'][0]);
+            
+            // LÍNEAS RESTAURADAS QUE HACÍAN FALTA
+            $current['prob_lluvia'] = $data['daily']['precipitation_probability_max'][0];
+            $current['lluvia_total'] = $data['daily']['precipitation_sum'][0];
+
+            // Convertir visibilidad y presión según preferencias
+            $current['vis_val'] = session('pref_dist', 'km') === 'mi' ? round($current['visibility'] / 1609.34) : round($current['visibility'] / 1000);
+            $current['press_val'] = session('pref_press', 'hpa') === 'mmhg' ? round($current['surface_pressure'] * 0.750062) : round($current['surface_pressure']);
+
             $arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SO", "OSO", "O", "ONO", "NO", "NNO"];
             $current['wind_dir_text'] = $arr[floor(($current['wind_direction_10m'] / 22.5) + 0.5) % 16];
 
