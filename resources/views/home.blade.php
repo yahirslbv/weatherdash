@@ -51,8 +51,7 @@
                             
                             <div class="relative z-10 mt-12 flex flex-col sm:flex-row items-start sm:items-end justify-between border-t border-blue-400/20 pt-5 gap-4">
                                 <div class="text-sm space-y-1">
-                                    <p class="text-blue-200">Sensación térmica: <span class="font-bold text-white">{{ round($currentWeather['apparent_temperature']) }}{{ $units['temp'] }}</span></p>
-                                    <p class="text-blue-200">Rango del día: <span class="font-bold text-white">Máx {{ $currentWeather['max'] }}° / Mín {{ $currentWeather['min'] }}°</span></p>
+                                    <p class="text-blue-200">Sensación térmica: <span class="font-bold text-white">{{ isset($currentWeather['apparent_temperature']) ? round($currentWeather['apparent_temperature']) : round($currentWeather['temperature_2m']) }}{{ $units['temp'] }}</span></p>                                    <p class="text-blue-200">Rango del día: <span class="font-bold text-white">Máx {{ $currentWeather['max'] }}° / Mín {{ $currentWeather['min'] }}°</span></p>
                                 </div>
                                 <div class="text-xs font-medium text-blue-200/60 bg-black/20 px-3 py-1.5 rounded-lg">
                                     Actualizado hace un momento

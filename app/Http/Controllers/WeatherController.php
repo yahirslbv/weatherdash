@@ -19,7 +19,7 @@ class WeatherController extends Controller
         $units = $this->getUnits();
 
         foreach ($cities as $city) {
-            $cacheKey = "weather_dashboard_{$city->latitude}_{$city->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
+            $cacheKey = "dashboard_v2_{$city->latitude}_{$city->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
             
             $fullData = Cache::remember($cacheKey, 3600, function () use ($city) {
                 $response = Http::get('https://api.open-meteo.com/v1/forecast', [
@@ -35,9 +35,9 @@ class WeatherController extends Controller
             });
 
             if ($fullData) {
-                $weatherData = $fullData['current'];
-                $weatherData['icon'] = $this->getWeatherIcon($weatherData['weather_code']);
-                $weatherData['description'] = $this->getWeatherDescription($weatherData['weather_code']);
+                $weatherData = $fullData['current'] ?? [];
+                $weatherData['icon'] = $this->getWeatherIcon($weatherData['weather_code'] ?? 0);
+                $weatherData['description'] = $this->getWeatherDescription($weatherData['weather_code'] ?? 0);
                 
                 if (isset($fullData['daily'])) {
                     $weatherData['max'] = round($fullData['daily']['temperature_2m_max'][0]);
@@ -89,7 +89,8 @@ class WeatherController extends Controller
             ];
         }
 
-        $cacheKeyWeather = "weather_home_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
+        // Obligamos a ignorar caché corrupta usando "_v2"
+        $cacheKeyWeather = "home_v2_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
         $wData = Cache::remember($cacheKeyWeather, 3600, function () use ($selectedCity) {
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
                 'latitude' => $selectedCity->latitude,
@@ -118,6 +119,10 @@ class WeatherController extends Controller
 
         if ($wData) {
             $currentWeather = $wData['current'];
+            
+            // CORRECCIONES Y VALORES DE RESCATE (Para evitar colapsos)
+            $currentWeather['apparent_temperature'] = $currentWeather['apparent_temperature'] ?? $currentWeather['temperature_2m'];
+            
             $currentWeather['icon'] = $this->getWeatherIcon($currentWeather['weather_code']);
             $currentWeather['description'] = $this->getWeatherDescription($currentWeather['weather_code']);
             $currentWeather['max'] = round($wData['daily']['temperature_2m_max'][0]);
@@ -126,8 +131,11 @@ class WeatherController extends Controller
             $currentWeather['sunrise'] = date('g:i a', strtotime($wData['daily']['sunrise'][0]));
             $currentWeather['sunset'] = date('g:i a', strtotime($wData['daily']['sunset'][0]));
             
-            $currentWeather['vis_val'] = session('pref_dist', 'km') === 'mi' ? round($currentWeather['visibility'] / 1609.34) : round($currentWeather['visibility'] / 1000);
-            $currentWeather['press_val'] = session('pref_press', 'hpa') === 'mmhg' ? round($currentWeather['surface_pressure'] * 0.750062) : round($currentWeather['surface_pressure']);
+            $vis = $currentWeather['visibility'] ?? 10000;
+            $currentWeather['vis_val'] = session('pref_dist', 'km') === 'mi' ? round($vis / 1609.34) : round($vis / 1000);
+            
+            $press = $currentWeather['surface_pressure'] ?? 1013;
+            $currentWeather['press_val'] = session('pref_press', 'hpa') === 'mmhg' ? round($press * 0.750062) : round($press);
 
             $currentHour = (int)date('H');
             for ($i = 0; $i < 6; $i++) {
@@ -170,17 +178,14 @@ class WeatherController extends Controller
             $selectedCity = (object)['id' => null, 'city_name' => 'Tijuana, Baja California', 'latitude' => 32.5149, 'longitude' => -117.0382];
         }
 
-        // TRUCO 1: Cambiamos el nombre de la caché agregando "v2" para forzar a que ignore la memoria vieja
-        $cacheKeyForecast = "forecast_v2_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
+        // Obligamos a ignorar caché corrupta usando "_v3"
+        $cacheKeyForecast = "forecast_v3_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
         
         $data = Cache::remember($cacheKeyForecast, 3600, function () use ($selectedCity) {
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
                 'latitude' => $selectedCity->latitude,
                 'longitude' => $selectedCity->longitude,
-                
-                // Aseguramos que la API realmente nos mande 'visibility' y 'surface_pressure'
                 'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation,visibility,surface_pressure',
-                
                 'hourly' => 'temperature_2m,precipitation_probability',
                 'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code',
                 'timezone' => 'auto',
@@ -203,21 +208,22 @@ class WeatherController extends Controller
             $current['prob_lluvia'] = $data['daily']['precipitation_probability_max'][0];
             $current['lluvia_total'] = $data['daily']['precipitation_sum'][0];
 
-            // TRUCO 2: Validamos que exista antes de hacer la matemática (evita que la vista colapse)
+            // VALORES DE RESCATE (Previene fallos de renderizado)
             if (isset($current['visibility'])) {
                 $current['vis_val'] = session('pref_dist', 'km') === 'mi' ? round($current['visibility'] / 1609.34) : round($current['visibility'] / 1000);
             } else {
-                $current['vis_val'] = 0; // Valor de rescate
+                $current['vis_val'] = 0;
             }
 
             if (isset($current['surface_pressure'])) {
                 $current['press_val'] = session('pref_press', 'hpa') === 'mmhg' ? round($current['surface_pressure'] * 0.750062) : round($current['surface_pressure']);
             } else {
-                $current['press_val'] = 0; // Valor de rescate
+                $current['press_val'] = 0;
             }
 
+            $windDir = $current['wind_direction_10m'] ?? 0;
             $arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SO", "OSO", "O", "ONO", "NO", "NNO"];
-            $current['wind_dir_text'] = $arr[floor(($current['wind_direction_10m'] / 22.5) + 0.5) % 16];
+            $current['wind_dir_text'] = $arr[floor(($windDir / 22.5) + 0.5) % 16];
 
             for ($i = 0; $i <= 11; $i++) {
                 if (isset($data['hourly']['time'][(int)date('H') + $i])) {
