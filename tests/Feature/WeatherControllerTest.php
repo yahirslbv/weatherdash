@@ -1,270 +1,291 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace Tests\Feature;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Http;
+use App\Models\User;
 use App\Models\FavoriteCity;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
+use Tests\TestCase;
 
-class WeatherController extends Controller
+class WeatherControllerTest extends TestCase
 {
-    // ==========================================
-    // SECCIÓN 1: MIS LUGARES (Dashboard)
-    // ==========================================
-    public function index()
+    use RefreshDatabase;
+
+    protected $user;
+
+    protected function setUp(): void
     {
-        $cities = Auth::user()->favoriteCities;
-        $units = $this->getUnits();
-
-        foreach ($cities as $city) {
-            $cacheKey = "weather_dashboard_{$city->latitude}_{$city->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
-            
-            $weatherData = Cache::remember($cacheKey, 3600, function () use ($city) {
-                $response = Http::get('https://api.open-meteo.com/v1/forecast', [
-                    'latitude' => $city->latitude,
-                    'longitude' => $city->longitude,
-                    'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,weather_code',
-                    'timezone' => 'auto',
-                    'temperature_unit' => session('pref_temp', 'celsius'),
-                    'wind_speed_unit' => session('pref_wind', 'kmh'),
-                ]);
-                return $response->successful() ? $response->json()['current'] : null;
-            });
-
-            if ($weatherData) {
-                $weatherData['icon'] = $this->getWeatherIcon($weatherData['weather_code']);
-                $weatherData['description'] = $this->getWeatherDescription($weatherData['weather_code']);
-                $city->weather = $weatherData;
-            }
-        }
-
-        return view('dashboard', compact('cities', 'units'));
+        parent::setUp();
+        // Limpiamos la caché antes de cada prueba para evitar interferencias
+        Cache::flush(); 
+        // Creamos un usuario base para nuestras pruebas
+        $this->user = User::factory()->create();
     }
 
-    public function store(Request $request)
+    /** 1. Prueba de redirección raíz (Feature) */
+    public function test_root_url_redirects_to_home()
     {
-        $request->validate(['city_name' => 'required|string|max:255']);
-        return $this->saveCity($request->city_name);
+        $response = $this->get('/');
+        $response->assertRedirect(route('home'));
     }
 
-    public function update(Request $request, FavoriteCity $city)
+    /** 2. Prueba de seguridad de rutas (Feature) */
+    public function test_unauthenticated_user_cannot_access_dashboard()
     {
-        if ($city->user_id !== Auth::id()) abort(403);
-        $request->validate(['city_name' => 'required|string|max:255']);
-        return $this->saveCity($request->city_name, $city);
+        $response = $this->get(route('dashboard'));
+        $response->assertRedirect(route('login'));
     }
 
-    public function destroy(FavoriteCity $city)
+    /** 3. Prueba de acceso seguro al dashboard (Feature) */
+    public function test_authenticated_user_can_access_dashboard()
     {
-        if ($city->user_id !== Auth::id()) abort(403);
-        $city->delete();
-        return back()->with('success', 'Ciudad eliminada.');
+        $response = $this->actingAs($this->user)->get(route('dashboard'));
+        $response->assertStatus(200);
     }
 
-    // ==========================================
-    // SECCIÓN 2: PANTALLA PRINCIPAL (Home API)
-    // ==========================================
-    public function home(Request $request)
+    /** 4. Prueba de acceso a configuraciones (Feature) */
+    public function test_authenticated_user_can_access_settings()
     {
-        $user = Auth::user();
-        $cities = $user->favoriteCities;
-        $units = $this->getUnits();
-
-        $selectedCity = $request->has('city_id') ? $cities->find($request->city_id) : $cities->first();
-        
-        if (!$selectedCity) {
-            $selectedCity = (object)[
-                'id' => null, 'city_name' => 'Tijuana, Baja California',
-                'latitude' => 32.5149, 'longitude' => -117.0382
-            ];
-        }
-
-        $cacheKeyWeather = "weather_home_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
-        $wData = Cache::remember($cacheKeyWeather, 3600, function () use ($selectedCity) {
-            $response = Http::get('https://api.open-meteo.com/v1/forecast', [
-                'latitude' => $selectedCity->latitude,
-                'longitude' => $selectedCity->longitude,
-                'current' => 'temperature_2m,apparent_temperature,weather_code,relative_humidity_2m,wind_speed_10m,visibility,surface_pressure',
-                'hourly' => 'temperature_2m,weather_code',
-                'daily' => 'temperature_2m_max,temperature_2m_min,uv_index_max,sunrise,sunset,weather_code,precipitation_probability_max',
-                'timezone' => 'auto',
-                'forecast_days' => 7,
-                'temperature_unit' => session('pref_temp', 'celsius'),
-                'wind_speed_unit' => session('pref_wind', 'kmh'),
-            ]);
-            return $response->successful() ? $response->json() : null;
-        });
-
-        $airQuality = Cache::remember("aqi_home_{$selectedCity->latitude}_{$selectedCity->longitude}", 3600, function () use ($selectedCity) {
-            $response = Http::get('https://air-quality-api.open-meteo.com/v1/air-quality', [
-                'latitude' => $selectedCity->latitude,
-                'longitude' => $selectedCity->longitude,
-                'current' => 'us_aqi,pm10,pm2_5,carbon_monoxide'
-            ]);
-            return $response->successful() ? $response->json()['current'] : null;
-        });
-
-        $currentWeather = null; $hourlyWeather = []; $dailyWeather = [];
-
-        if ($wData) {
-            $currentWeather = $wData['current'];
-            $currentWeather['icon'] = $this->getWeatherIcon($currentWeather['weather_code']);
-            $currentWeather['description'] = $this->getWeatherDescription($currentWeather['weather_code']);
-            $currentWeather['max'] = round($wData['daily']['temperature_2m_max'][0]);
-            $currentWeather['min'] = round($wData['daily']['temperature_2m_min'][0]);
-            $currentWeather['uv'] = round($wData['daily']['uv_index_max'][0]);
-            $currentWeather['sunrise'] = date('g:i a', strtotime($wData['daily']['sunrise'][0]));
-            $currentWeather['sunset'] = date('g:i a', strtotime($wData['daily']['sunset'][0]));
-            
-            $currentWeather['vis_val'] = session('pref_dist', 'km') === 'mi' ? round($currentWeather['visibility'] / 1609.34) : round($currentWeather['visibility'] / 1000);
-            $currentWeather['press_val'] = session('pref_press', 'hpa') === 'mmhg' ? round($currentWeather['surface_pressure'] * 0.750062) : round($currentWeather['surface_pressure']);
-
-            $currentHour = (int)date('H');
-            for ($i = 0; $i < 6; $i++) {
-                if (isset($wData['hourly']['time'][$currentHour + $i])) {
-                    $hourlyWeather[] = [
-                        'hora' => $i == 0 ? 'Ahora' : date('H:i', strtotime($wData['hourly']['time'][$currentHour + $i])),
-                        'temp' => round($wData['hourly']['temperature_2m'][$currentHour + $i]) . '°',
-                        'icon' => $this->getWeatherIcon($wData['hourly']['weather_code'][$currentHour + $i])
-                    ];
-                }
-            }
-
-            $daysOfWeek = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
-            for ($i = 0; $i < 4; $i++) {
-                $dailyWeather[] = [
-                    'dia' => ($i == 0) ? 'Hoy' : (($i == 1) ? 'Mañana' : $daysOfWeek[date('w', strtotime($wData['daily']['time'][$i]))]),
-                    'icon' => $this->getWeatherIcon($wData['daily']['weather_code'][$i]),
-                    'desc' => $this->getWeatherDescription($wData['daily']['weather_code'][$i]),
-                    'prob_lluvia' => $wData['daily']['precipitation_probability_max'][$i],
-                    'max' => round($wData['daily']['temperature_2m_max'][$i]),
-                    'min' => round($wData['daily']['temperature_2m_min'][$i]),
-                ];
-            }
-        }
-
-        return view('home', compact('selectedCity', 'cities', 'currentWeather', 'hourlyWeather', 'dailyWeather', 'airQuality', 'units'));
+        $response = $this->actingAs($this->user)->get(route('settings'));
+        $response->assertStatus(200);
     }
 
-    // ==========================================
-    // SECCIÓN 3: PRONÓSTICO Y CONFIGURACIÓN
-    // ==========================================
-    public function forecast(Request $request)
+    /** 5. Prueba de actualización de configuraciones en sesión (Feature) */
+    public function test_user_can_update_settings_preferences()
     {
-        $user = Auth::user();
-        $cities = $user->favoriteCities;
-        $units = $this->getUnits();
-        $selectedCity = $request->has('city_id') ? $cities->find($request->city_id) : $cities->first();
-
-        if (!$selectedCity) {
-            $selectedCity = (object)['id' => null, 'city_name' => 'Tijuana, Baja California', 'latitude' => 32.5149, 'longitude' => -117.0382];
-        }
-
-        $cacheKeyForecast = "weather_forecast_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
-        $data = Cache::remember($cacheKeyForecast, 3600, function () use ($selectedCity) {
-            $response = Http::get('https://api.open-meteo.com/v1/forecast', [
-                'latitude' => $selectedCity->latitude,
-                'longitude' => $selectedCity->longitude,
-                'current' => 'temperature_2m,relative_humidity_2m,wind_speed_10m,wind_direction_10m,weather_code,precipitation',
-                'hourly' => 'temperature_2m,precipitation_probability',
-                'daily' => 'temperature_2m_max,temperature_2m_min,precipitation_probability_max,precipitation_sum,weather_code',
-                'timezone' => 'auto',
-                'forecast_days' => 14,
-                'temperature_unit' => session('pref_temp', 'celsius'),
-                'wind_speed_unit' => session('pref_wind', 'kmh'),
-            ]);
-            return $response->successful() ? $response->json() : null;
-        });
-
-        $current = null; $hourly = []; $daily = [];
-
-        if ($data) {
-            $current = $data['current'];
-            $current['desc'] = $this->getWeatherDescription($current['weather_code']);
-            $current['icon'] = $this->getWeatherIcon($current['weather_code']);
-            $current['max'] = round($data['daily']['temperature_2m_max'][0]);
-            $current['min'] = round($data['daily']['temperature_2m_min'][0]);
-            
-            // LÍNEAS RESTAURADAS QUE FALTABAN PARA LA VISTA
-            $current['prob_lluvia'] = $data['daily']['precipitation_probability_max'][0];
-            $current['lluvia_total'] = $data['daily']['precipitation_sum'][0];
-
-            $arr = ["N", "NNE", "NE", "ENE", "E", "ESE", "SE", "SSE", "S", "SSW", "SO", "OSO", "O", "ONO", "NO", "NNO"];
-            $current['wind_dir_text'] = $arr[floor(($current['wind_direction_10m'] / 22.5) + 0.5) % 16];
-
-            for ($i = 0; $i <= 11; $i++) {
-                if (isset($data['hourly']['time'][(int)date('H') + $i])) {
-                    $hourly[] = [
-                        'time' => date('H:i', strtotime($data['hourly']['time'][(int)date('H') + $i])),
-                        'temp' => round($data['hourly']['temperature_2m'][(int)date('H') + $i]),
-                        'prob' => $data['hourly']['precipitation_probability'][(int)date('H') + $i]
-                    ];
-                }
-            }
-
-            for ($i = 0; $i < 14; $i++) {
-                if (isset($data['daily']['time'][$i])) {
-                    $daily[] = [
-                        'date' => ($i == 0) ? 'Hoy' : (($i == 1) ? 'Mañana' : ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'][date('w', strtotime($data['daily']['time'][$i]))] . ' ' . date('d', strtotime($data['daily']['time'][$i]))),
-                        'icon' => $this->getWeatherIcon($data['daily']['weather_code'][$i]),
-                        'desc' => $this->getWeatherDescription($data['daily']['weather_code'][$i]),
-                        'max' => round($data['daily']['temperature_2m_max'][$i]),
-                        'min' => round($data['daily']['temperature_2m_min'][$i]),
-                        'prob' => $data['daily']['precipitation_probability_max'][$i],
-                    ];
-                }
-            }
-        }
-
-        return view('forecast', compact('selectedCity', 'cities', 'current', 'hourly', 'daily', 'units'));
-    }
-
-    public function settings() { return view('settings'); }
-
-    public function updateSettings(Request $request)
-    {
-        session([
-            'pref_temp' => $request->pref_temp ?? 'celsius',
-            'pref_wind' => $request->pref_wind ?? 'kmh',
-            'pref_dist' => $request->pref_dist ?? 'km',
-            'pref_press' => $request->pref_press ?? 'hpa',
+        $response = $this->actingAs($this->user)->post(route('settings.update'), [
+            'pref_temp' => 'fahrenheit',
+            'pref_wind' => 'mph',
+            'pref_dist' => 'mi',
+            'pref_press' => 'mmhg',
         ]);
-        return back()->with('success', 'Preferencias guardadas correctamente.');
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        
+        $this->assertEquals('fahrenheit', session('pref_temp'));
+        $this->assertEquals('mph', session('pref_wind'));
     }
 
-    private function getUnits()
+    /** 6. Prueba de validación de ciudad vacía (Unit/Feature) */
+    public function test_store_city_validation_fails_if_name_is_empty()
     {
-        return [
-            'temp' => session('pref_temp', 'celsius') === 'fahrenheit' ? '°F' : '°C',
-            'wind' => session('pref_wind', 'kmh') === 'mph' ? 'mph' : (session('pref_wind', 'kmh') === 'ms' ? 'm/s' : 'km/h'),
-            'dist' => session('pref_dist', 'km') === 'mi' ? 'mi' : 'km',
-            'press' => session('pref_press', 'hpa') === 'mmhg' ? 'mmHg' : 'hPa',
-        ];
+        $response = $this->actingAs($this->user)->post(route('city.store'), [
+            'city_name' => '',
+        ]);
+
+        $response->assertSessionHasErrors('city_name');
     }
 
-    private function saveCity($name, $cityModel = null)
+    /** 7. Prueba con Http::fake para geocodificación exitosa (Feature) */
+    public function test_user_can_store_favorite_city_with_http_fake()
     {
-        $response = Http::get('https://geocoding-api.open-meteo.com/v1/search', ['name' => $name, 'count' => 1, 'language' => 'es', 'format' => 'json']);
-        if ($response->successful() && isset($response->json()['results'][0])) {
-            $loc = $response->json()['results'][0];
-            $data = ['city_name' => $loc['name'] . (isset($loc['admin1']) ? ', ' . $loc['admin1'] : ''), 'latitude' => $loc['latitude'], 'longitude' => $loc['longitude']];
-            $cityModel ? $cityModel->update($data) : Auth::user()->favoriteCities()->create($data);
-            return back()->with('success', 'Ciudad procesada correctamente.');
-        }
-        return back()->withErrors(['city_name' => 'No se encontró la ubicación exacta.']);
+        // Simulamos la respuesta de la API de Geocoding
+        Http::fake([
+            'geocoding-api.open-meteo.com/*' => Http::response([
+                'results' => [
+                    ['name' => 'Monterrey', 'admin1' => 'Nuevo León', 'latitude' => 25.68, 'longitude' => -100.31]
+                ]
+            ], 200)
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('city.store'), [
+            'city_name' => 'Monterrey'
+        ]);
+
+        $response->assertRedirect();
+        $this->assertDatabaseHas('favorite_cities', [
+            'user_id' => $this->user->id,
+            'city_name' => 'Monterrey, Nuevo León'
+        ]);
     }
 
-    private function getWeatherIcon($code)
+    /** 8. Prueba con Http::fake para ciudad no encontrada (Feature) */
+    public function test_user_cannot_store_city_if_geocoding_returns_no_results()
     {
-        $icons = [0=>'☀️', 1=>'🌤️', 2=>'⛅', 3=>'☁️', 45=>'🌫️', 48=>'🌫️', 51=>'🌧️', 53=>'🌧️', 55=>'🌧️', 61=>'🌧️', 63=>'🌧️', 65=>'🌧️', 71=>'❄️', 73=>'❄️', 75=>'❄️', 95=>'⛈️', 96=>'⛈️', 99=>'⛈️'];
-        return $icons[$code] ?? '☁️';
+        // Simulamos que la API no encontró la ciudad
+        Http::fake([
+            'geocoding-api.open-meteo.com/*' => Http::response(['results' => []], 200)
+        ]);
+
+        $response = $this->actingAs($this->user)->post(route('city.store'), [
+            'city_name' => 'CiudadFalsa123'
+        ]);
+
+        $response->assertSessionHasErrors('city_name');
+        $this->assertDatabaseMissing('favorite_cities', [
+            'city_name' => 'CiudadFalsa123'
+        ]);
     }
 
-    private function getWeatherDescription($code)
+    /** 9. Prueba con Http::fake para actualizar ciudad (Feature) */
+    public function test_user_can_update_their_own_favorite_city()
     {
-        $descriptions = [0=>'Despejado', 1=>'Mayormente despejado', 2=>'Parcialmente nublado', 3=>'Nublado', 45=>'Niebla', 48=>'Niebla escarchada', 51=>'Llovizna ligera', 53=>'Llovizna moderada', 55=>'Llovizna densa', 61=>'Lluvia leve', 63=>'Lluvia moderada', 65=>'Lluvia fuerte', 71=>'Nieve leve', 73=>'Nieve moderada', 75=>'Nieve fuerte', 95=>'Tormenta', 96=>'Tormenta con granizo', 99=>'Tormenta fuerte con granizo'];
-        return $descriptions[$code] ?? 'Desconocido';
+        Http::fake([
+            'geocoding-api.open-meteo.com/*' => Http::response([
+                'results' => [['name' => 'Guadalajara', 'admin1' => 'Jalisco', 'latitude' => 20.65, 'longitude' => -103.34]]
+            ], 200)
+        ]);
+
+        $city = FavoriteCity::create(['user_id' => $this->user->id, 'city_name' => 'ViejaCiudad', 'latitude' => 0, 'longitude' => 0]);
+
+        $response = $this->actingAs($this->user)->patch(route('city.update', $city), [
+            'city_name' => 'Guadalajara'
+        ]);
+
+        $this->assertDatabaseHas('favorite_cities', [
+            'id' => $city->id,
+            'city_name' => 'Guadalajara, Jalisco'
+        ]);
+    }
+
+    /** 10. Prueba de autorización al actualizar (Seguridad) */
+    public function test_user_cannot_update_another_users_favorite_city()
+    {
+        $otherUser = User::factory()->create();
+        $otherCity = FavoriteCity::create(['user_id' => $otherUser->id, 'city_name' => 'Ciudad Ajena', 'latitude' => 0, 'longitude' => 0]);
+
+        $response = $this->actingAs($this->user)->patch(route('city.update', $otherCity), [
+            'city_name' => 'Mi Ciudad'
+        ]);
+
+        $response->assertStatus(403); // Forbidden
+    }
+
+    /** 11. Prueba de borrado de ciudad propia (Feature) */
+    public function test_user_can_delete_their_own_favorite_city()
+    {
+        $city = FavoriteCity::create(['user_id' => $this->user->id, 'city_name' => 'Tijuana', 'latitude' => 32.5, 'longitude' => -117]);
+
+        $response = $this->actingAs($this->user)->delete(route('city.destroy', $city));
+
+        $response->assertRedirect();
+        $this->assertDatabaseMissing('favorite_cities', ['id' => $city->id]);
+    }
+
+    /** 12. Prueba de autorización al borrar (Seguridad) */
+    public function test_user_cannot_delete_another_users_favorite_city()
+    {
+        $otherUser = User::factory()->create();
+        $otherCity = FavoriteCity::create(['user_id' => $otherUser->id, 'city_name' => 'Ciudad Ajena', 'latitude' => 0, 'longitude' => 0]);
+
+        $response = $this->actingAs($this->user)->delete(route('city.destroy', $otherCity));
+
+        $response->assertStatus(403);
+    }
+
+    /** 13. Prueba con Http::fake para carga del Home (Feature/API) */
+    public function test_home_loads_weather_data_with_http_fake()
+    {
+        $this->fakeWeatherAPI();
+
+        $response = $this->actingAs($this->user)->get(route('home'));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('currentWeather');
+        $response->assertViewHas('airQuality');
+    }
+
+    /** 14. Prueba con Http::fake para vista Forecast (Feature/API) */
+    public function test_forecast_loads_weather_data_with_http_fake()
+    {
+        $this->fakeWeatherAPI();
+
+        $response = $this->actingAs($this->user)->get(route('forecast'));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('current');
+        $response->assertViewHas('daily');
+    }
+
+    /** 15. Prueba con Http::fake para iteración del Dashboard (Feature/API) */
+    public function test_dashboard_loads_weather_data_for_cities_with_http_fake()
+    {
+        $this->fakeWeatherAPI();
+
+        FavoriteCity::create(['user_id' => $this->user->id, 'city_name' => 'Tijuana', 'latitude' => 32.5, 'longitude' => -117]);
+        FavoriteCity::create(['user_id' => $this->user->id, 'city_name' => 'Mexicali', 'latitude' => 32.6, 'longitude' => -115.4]);
+
+        $response = $this->actingAs($this->user)->get(route('dashboard'));
+
+        $response->assertStatus(200);
+        $response->assertViewHas('cities');
+    }
+
+    /** 16. Prueba de Ciudad por Defecto en Home (Feature) */
+    public function test_home_uses_default_city_if_user_has_no_favorites()
+    {
+        $this->fakeWeatherAPI();
+
+        $response = $this->actingAs($this->user)->get(route('home'));
+
+        $viewData = $response->original->getData();
+        $this->assertEquals('Tijuana, Baja California', $viewData['selectedCity']->city_name);
+    }
+
+    /** 17. Prueba de selección de ciudad específica (Feature) */
+    public function test_home_loads_specific_city_if_requested()
+    {
+        $this->fakeWeatherAPI();
+        
+        $city = FavoriteCity::create(['user_id' => $this->user->id, 'city_name' => 'Ensenada', 'latitude' => 31.86, 'longitude' => -116.59]);
+
+        $response = $this->actingAs($this->user)->get(route('home', ['city_id' => $city->id]));
+
+        $viewData = $response->original->getData();
+        $this->assertEquals('Ensenada', $viewData['selectedCity']->city_name);
+    }
+
+    /** 18. Prueba de lógica interna de caché y unidades (Unit/Feature) */
+    public function test_units_are_correctly_applied_from_session()
+    {
+        $this->fakeWeatherAPI();
+        
+        session(['pref_temp' => 'fahrenheit']);
+        
+        $response = $this->actingAs($this->user)->get(route('home'));
+        $viewData = $response->original->getData();
+        
+        // Verifica que la vista reciba el arreglo de unidades modificado por la sesión
+        $this->assertEquals('°F', $viewData['units']['temp']);
+    }
+
+    /**
+     * Helper interno para simular respuestas completas de las APIs del clima.
+     * Esto evita que falle por llaves no definidas y cumple el requisito Http::fake
+     */
+    private function fakeWeatherAPI()
+    {
+        Http::fake([
+            'api.open-meteo.com/*' => Http::response([
+                'current' => [
+                    'temperature_2m' => 22, 'apparent_temperature' => 23, 'weather_code' => 1,
+                    'relative_humidity_2m' => 60, 'wind_speed_10m' => 15, 'wind_direction_10m' => 180,
+                    'visibility' => 10000, 'surface_pressure' => 1012, 'precipitation' => 0
+                ],
+                'hourly' => [
+                    'time' => array_fill(0, 48, date('Y-m-d\TH:00')),
+                    'temperature_2m' => array_fill(0, 48, 22),
+                    'weather_code' => array_fill(0, 48, 1),
+                    'precipitation_probability' => array_fill(0, 48, 10)
+                ],
+                'daily' => [
+                    'time' => array_fill(0, 14, date('Y-m-d')),
+                    'temperature_2m_max' => array_fill(0, 14, 28),
+                    'temperature_2m_min' => array_fill(0, 14, 16),
+                    'uv_index_max' => array_fill(0, 14, 6),
+                    'sunrise' => array_fill(0, 14, date('Y-m-d\T06:00')),
+                    'sunset' => array_fill(0, 14, date('Y-m-d\T19:00')),
+                    'weather_code' => array_fill(0, 14, 1),
+                    'precipitation_probability_max' => array_fill(0, 14, 10),
+                    'precipitation_sum' => array_fill(0, 14, 0)
+                ]
+            ], 200),
+            'air-quality-api.open-meteo.com/*' => Http::response([
+                'current' => ['us_aqi' => 35, 'pm10' => 10, 'pm2_5' => 5, 'carbon_monoxide' => 150]
+            ], 200)
+        ]);
     }
 }

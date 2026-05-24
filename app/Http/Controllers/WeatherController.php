@@ -89,7 +89,9 @@ class WeatherController extends Controller
             ];
         }
 
-        // Obligamos a ignorar caché corrupta usando "_v2"
+        // OBLIGAMOS A DEBUGBAR A MEDIR ESTE BLOQUE EXACTO
+        \Debugbar::startMeasure('api_clima', 'Tiempo de respuesta: API Clima');
+        
         $cacheKeyWeather = "home_v2_{$selectedCity->latitude}_{$selectedCity->longitude}_temp_" . session('pref_temp', 'celsius') . "_wind_" . session('pref_wind', 'kmh');
         $wData = Cache::remember($cacheKeyWeather, 3600, function () use ($selectedCity) {
             $response = Http::get('https://api.open-meteo.com/v1/forecast', [
@@ -106,6 +108,11 @@ class WeatherController extends Controller
             return $response->successful() ? $response->json() : null;
         });
 
+        \Debugbar::stopMeasure('api_clima');
+
+        // MEDIMOS TAMBIÉN LA CALIDAD DEL AIRE
+        \Debugbar::startMeasure('api_aqi', 'Tiempo de respuesta: API Calidad del Aire');
+
         $airQuality = Cache::remember("aqi_home_{$selectedCity->latitude}_{$selectedCity->longitude}", 3600, function () use ($selectedCity) {
             $response = Http::get('https://air-quality-api.open-meteo.com/v1/air-quality', [
                 'latitude' => $selectedCity->latitude,
@@ -114,6 +121,8 @@ class WeatherController extends Controller
             ]);
             return $response->successful() ? $response->json()['current'] : null;
         });
+
+        \Debugbar::stopMeasure('api_aqi');
 
         $currentWeather = null; $hourlyWeather = []; $dailyWeather = [];
 
