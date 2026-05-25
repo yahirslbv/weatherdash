@@ -1,5 +1,5 @@
 <x-app-layout>
-    <div class="py-8 bg-[#0B132B] min-h-screen font-sans text-slate-200" 
+    <div class="py-8 min-h-screen font-sans text-slate-200" 
          x-data="{ 
             selectedCities: [], 
             showModal: false,

@@ -1,3 +1,13 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+    .weatherdash-gradient {
+        background:
+            radial-gradient(circle at 88% 12%, rgba(20, 184, 166, 0.18), transparent 34%),
+            radial-gradient(circle at 12% 20%, rgba(37, 99, 235, 0.16), transparent 30%),
+            linear-gradient(135deg, #0B132B 0%, #15203D 52%, #0F766E 140%);
+        background-attachment: fixed;
+    }
+}
