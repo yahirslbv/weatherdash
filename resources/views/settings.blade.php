@@ -6,10 +6,18 @@
             notifCritical: $persist(true),
             notifDaily: $persist(true),
             notifRain: $persist(false),
+            theme: '{{ session('pref_theme', 'dark') === 'light' ? 'light' : 'dark' }}',
 
             triggerSave() {
                 this.savedSuccess = true;
                 setTimeout(() => this.savedSuccess = false, 3500);
+            },
+
+            setTheme(theme) {
+                this.theme = theme;
+                document.documentElement.dataset.theme = theme;
+                document.documentElement.classList.toggle('theme-light', theme === 'light');
+                document.documentElement.classList.toggle('theme-dark', theme === 'dark');
             }
          }">
         <div class="max-w-6xl mx-auto sm:px-6 lg:px-8">
@@ -194,14 +202,18 @@
                         <div x-show="activeTab === 'apariencia'" style="display: none;" x-transition:enter="transition ease-out duration-150" class="space-y-6">
                             <div class="bg-[#15203D] rounded-[24px] shadow-lg border border-[#1E2D56] p-8">
                                 <h3 class="text-lg font-bold text-white border-b border-[#1E2D56] pb-4 mb-6">Interfaz y Apariencia</h3>
-                                <label class="flex items-center justify-between cursor-pointer group">
+                                <input type="hidden" name="pref_theme" value="{{ session('pref_theme', 'dark') === 'light' ? 'light' : 'dark' }}" :value="theme">
+                                <label for="pref-theme-light" class="flex items-center justify-between cursor-pointer group gap-6">
                                     <div>
-                                        <p class="font-bold text-white text-base">Modo Oscuro Permanente</p>
-                                        <p class="text-sm text-[#829AB1] font-medium mt-0.5">Mantener la paleta de colores azul oscuro profunda de WeatherDash.</p>
+                                        <p class="font-bold text-white text-base" x-text="theme === 'light' ? 'Modo claro activo' : 'Modo oscuro activo'"></p>
+                                        <p class="text-sm text-[#829AB1] font-medium mt-0.5">Alterna entre la paleta oscura de WeatherDash y una version clara para usar de dia.</p>
                                     </div>
-                                    <div class="relative">
-                                        <input type="checkbox" class="sr-only peer" checked disabled>
-                                        <div class="w-11 h-6 bg-[#0B132B] border border-[#1E2D56] rounded-full peer peer-checked:bg-blue-600 after:content-[''] after:absolute after:top-[2px] after:left-[2.5-rem] after:translate-x-full after:bg-white after:rounded-full after:h-5 after:w-5 opacity-80"></div>
+                                    <div class="flex items-center gap-3 shrink-0">
+                                        <span class="text-xs font-bold text-[#829AB1]" x-text="theme === 'light' ? 'Claro' : 'Oscuro'"></span>
+                                        <div class="relative">
+                                            <input id="pref-theme-light" type="checkbox" class="sr-only peer" :checked="theme === 'light'" @change="setTheme($event.target.checked ? 'light' : 'dark')">
+                                            <div class="h-7 w-12 rounded-full border border-[#1E2D56] bg-[#0B132B] transition peer-checked:bg-blue-600 after:absolute after:left-1 after:top-1 after:h-5 after:w-5 after:rounded-full after:bg-white after:shadow after:transition peer-checked:after:translate-x-5"></div>
+                                        </div>
                                     </div>
                                 </label>
                             </div>

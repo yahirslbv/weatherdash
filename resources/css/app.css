@@ -11,3 +11,148 @@
         background-attachment: fixed;
     }
 }
+
+.theme-dark {
+    color-scheme: dark;
+    --wd-bg: #0B132B;
+    --wd-surface: #15203D;
+    --wd-surface-strong: #0B132B;
+    --wd-border: #1E2D56;
+    --wd-text: #F8FAFC;
+    --wd-muted: #829AB1;
+}
+
+.theme-light {
+    color-scheme: light;
+    --wd-bg: #F4F8FC;
+    --wd-surface: #FFFFFF;
+    --wd-surface-strong: #EAF1F8;
+    --wd-border: #D6E2F0;
+    --wd-text: #0F172A;
+    --wd-muted: #607089;
+}
+
+.theme-light body {
+    background-color: var(--wd-bg) !important;
+    color: var(--wd-text);
+}
+
+.theme-light .weatherdash-gradient {
+    background: linear-gradient(135deg, #F8FBFF 0%, #EEF5FF 58%, #DDF7EF 145%);
+    background-attachment: fixed;
+}
+
+.theme-light [class~="bg-[#15203D]"],
+.theme-light [class~="bg-[#15203D]/90"],
+.theme-light [class~="bg-[#15203D]/95"] {
+    background-color: var(--wd-surface) !important;
+}
+
+.theme-light [class~="bg-[#0B132B]"],
+.theme-light [class~="bg-[#0B132B]/30"],
+.theme-light [class~="bg-[#0B132B]/40"],
+.theme-light [class~="bg-[#0B132B]/50"] {
+    background-color: var(--wd-surface-strong) !important;
+}
+
+.theme-light [class~="bg-opacity-90"][class~="bg-[#0B132B]"] {
+    background-color: rgba(226, 234, 244, 0.88) !important;
+}
+
+.theme-light [class~="border-[#1E2D56]"],
+.theme-light [class~="border-[#1E2D56]/50"] {
+    border-color: var(--wd-border) !important;
+}
+
+.theme-light [class~="border-white/10"] {
+    border-color: rgba(148, 163, 184, 0.28) !important;
+}
+
+.theme-light [class~="text-white"],
+.theme-light [class~="text-slate-100"],
+.theme-light [class~="text-slate-200"] {
+    color: var(--wd-text) !important;
+}
+
+.theme-light [class~="text-[#829AB1]"],
+.theme-light [class~="text-slate-300"],
+.theme-light [class~="text-slate-600"] {
+    color: var(--wd-muted) !important;
+}
+
+.theme-light [class~="placeholder-[#829AB1]"]::placeholder {
+    color: var(--wd-muted) !important;
+}
+
+.theme-light input,
+.theme-light select,
+.theme-light textarea {
+    color: var(--wd-text);
+}
+
+.theme-light input[type="checkbox"] {
+    background-color: #FFFFFF;
+    border-color: var(--wd-border);
+    color: #2563EB;
+}
+
+.theme-light [class~="focus:ring-offset-[#15203D]"]:focus {
+    --tw-ring-offset-color: var(--wd-surface) !important;
+}
+
+.theme-light [class~="from-[#0B132B]"] {
+    --tw-gradient-from: #FFFFFF var(--tw-gradient-from-position);
+    --tw-gradient-to: rgb(255 255 255 / 0) var(--tw-gradient-to-position);
+    --tw-gradient-stops: var(--tw-gradient-from), var(--tw-gradient-to);
+}
+
+.theme-light [class~="to-[#15203D]"] {
+    --tw-gradient-to: #EAF1F8 var(--tw-gradient-to-position);
+}
+
+.theme-light [class~="bg-blue-600"][class~="text-white"],
+.theme-light [class~="bg-blue-500"][class~="text-white"],
+.theme-light [class~="from-blue-600"][class~="text-white"],
+.theme-light [class~="from-blue-600"] [class~="text-white"] {
+    color: #FFFFFF !important;
+}
+
+.theme-light [class~="from-blue-600"] [class~="bg-[#0B132B]/40"],
+.theme-light [class~="from-blue-600"] [class~="bg-[#0B132B]/50"] {
+    background-color: rgba(15, 23, 42, 0.36) !important;
+}
+
+.theme-light [class~="from-blue-600"] [class~="text-blue-100"] {
+    color: #DBEAFE !important;
+}
+
+.theme-light [class~="from-blue-600"] [class~="text-blue-200"],
+.theme-light [class~="from-blue-600"] [class~="text-blue-200/80"] {
+    color: rgba(191, 219, 254, 0.88) !important;
+}
+
+.theme-light .peer:checked ~ [class~="peer-checked:bg-blue-600"] {
+    background-color: #2563EB !important;
+}
+
+.theme-light [class*="shadow-[0_0_40px"],
+.theme-light [class*="shadow-[0_0_50px"] {
+    box-shadow: 0 24px 48px rgba(15, 23, 42, 0.14) !important;
+}
+
+@media (hover: hover) {
+    .theme-light [class~="hover:bg-[#0B132B]"]:hover,
+    .theme-light [class~="hover:bg-[#0B132B]/30"]:hover {
+        background-color: #DFEAF6 !important;
+    }
+
+    .theme-light [class~="hover:bg-[#1E2D56]"]:hover,
+    .theme-light [class~="hover:bg-[#1E2D56]/30"]:hover,
+    .theme-light [class~="hover:bg-[#1E2D56]/50"]:hover {
+        background-color: #DCEBFF !important;
+    }
+
+    .theme-light [class~="hover:text-white"]:hover {
+        color: var(--wd-text) !important;
+    }
+}

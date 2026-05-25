@@ -60,6 +60,7 @@ class WeatherControllerTest extends TestCase
             'pref_wind' => 'mph',
             'pref_dist' => 'mi',
             'pref_press' => 'mmhg',
+            'pref_theme' => 'light',
         ]);
 
         $response->assertRedirect();
@@ -67,6 +68,7 @@ class WeatherControllerTest extends TestCase
         
         $this->assertEquals('fahrenheit', session('pref_temp'));
         $this->assertEquals('mph', session('pref_wind'));
+        $this->assertEquals('light', session('pref_theme'));
     }
 
     /** 6. Prueba de validación de ciudad vacía (Unit/Feature) */
@@ -212,6 +214,9 @@ class WeatherControllerTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertViewHas('cities');
+
+        $units = $response->original->getData()['units'];
+        $response->assertSee('28' . $units['temp'] . '/16' . $units['temp'], false);
     }
 
     /** 16. Prueba de Ciudad por Defecto en Home (Feature) */

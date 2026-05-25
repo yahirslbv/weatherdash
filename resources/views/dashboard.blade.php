@@ -120,7 +120,11 @@
                                 {{-- ✅ CORRECCIÓN 2: unidad dinámica en MÁX/MÍN --}}
                                 <div class="bg-[#0B132B]/50 py-2 rounded-xl border border-[#1E2D56]/50">
                                     <span class="block text-[#829AB1] mb-0.5">MÁX/MÍN</span>
-                                    --{{ $units['temp'] }}/--{{ $units['temp'] }}
+                                    @if (isset($city->weather['max'], $city->weather['min']))
+                                        {{ $city->weather['max'] }}{{ $units['temp'] }}/{{ $city->weather['min'] }}{{ $units['temp'] }}
+                                    @else
+                                        --{{ $units['temp'] }}/--{{ $units['temp'] }}
+                                    @endif
                                 </div>
                                 <div class="bg-[#0B132B]/50 py-2 rounded-xl border border-[#1E2D56]/50">
                                     <span class="block text-[#829AB1] mb-0.5">HUMEDAD</span>

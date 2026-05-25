@@ -265,11 +265,14 @@ class WeatherController extends Controller
 
     public function updateSettings(Request $request)
     {
+        $theme = in_array($request->pref_theme, ['dark', 'light'], true) ? $request->pref_theme : 'dark';
+
         session([
             'pref_temp' => $request->pref_temp ?? 'celsius',
             'pref_wind' => $request->pref_wind ?? 'kmh',
             'pref_dist' => $request->pref_dist ?? 'km',
             'pref_press' => $request->pref_press ?? 'hpa',
+            'pref_theme' => $theme,
         ]);
         return back()->with('success', 'Preferencias guardadas correctamente.');
     }
